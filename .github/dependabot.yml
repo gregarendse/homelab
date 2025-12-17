@@ -13,15 +13,268 @@ updates:
       prefix: "deps"
       include: "scope"
 
-  # If you keep reusable modules here, Dependabot will check this folder too
+  # Terraform modules (each module directory must directly contain .tf files)
   - package-ecosystem: "terraform"
-    directory: "/infrastructure/modules"
+    directory: "/infrastructure/modules/kubernetes/manifest"
     schedule:
       interval: "weekly"
       timezone: "Etc/UTC"
     target-branch: "master"
     open-pull-requests-limit: 10
-    labels: ["dependencies", "terraform"]
+    labels: ["dependencies", "terraform", "module:kubernetes-manifest"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  - package-ecosystem: "terraform"
+    directory: "/infrastructure/modules/oracle/networking/network-load-balancer/listener"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "terraform", "module:oci-nlb-listener"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  - package-ecosystem: "terraform"
+    directory: "/infrastructure/cloudflare"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "terraform", "cloudflare"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  - package-ecosystem: "terraform"
+    directory: "/infrastructure/compute"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "terraform", "compute"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  - package-ecosystem: "terraform"
+    directory: "/infrastructure/kubernetes"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "terraform", "kubernetes"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  - package-ecosystem: "terraform"
+    directory: "/infrastructure/network"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "terraform", "network"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  # Docker images in application values.yaml files
+  - package-ecosystem: "docker"
+    directory: "/applications/actual"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "docker", "app:actual"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  - package-ecosystem: "docker"
+    directory: "/applications/deluge"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "docker", "app:deluge"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  - package-ecosystem: "docker"
+    directory: "/applications/echo"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "docker", "app:echo"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  - package-ecosystem: "docker"
+    directory: "/applications/heimdall"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "docker", "app:heimdall"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  - package-ecosystem: "docker"
+    directory: "/applications/home-assistant"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "docker", "app:home-assistant"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  - package-ecosystem: "docker"
+    directory: "/applications/keel"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "docker", "app:keel"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  - package-ecosystem: "docker"
+    directory: "/applications/nginx"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "docker", "app:nginx"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  - package-ecosystem: "docker"
+    directory: "/applications/openhab"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "docker", "app:openhab"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  - package-ecosystem: "docker"
+    directory: "/applications/plex"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "docker", "app:plex"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  - package-ecosystem: "docker"
+    directory: "/applications/prowlarr"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "docker", "app:prowlarr"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  - package-ecosystem: "docker"
+    directory: "/applications/radarr"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "docker", "app:radarr"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  - package-ecosystem: "docker"
+    directory: "/applications/sabnzbd"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "docker", "app:sabnzbd"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  - package-ecosystem: "docker"
+    directory: "/applications/sonarr"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "docker", "app:sonarr"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  - package-ecosystem: "docker"
+    directory: "/applications/tautulli"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "docker", "app:tautulli"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  - package-ecosystem: "docker"
+    directory: "/applications/traefik"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "docker", "app:traefik"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  - package-ecosystem: "docker"
+    directory: "/applications/wireguard"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "docker", "app:wireguard"]
     commit-message:
       prefix: "deps"
       include: "scope"
