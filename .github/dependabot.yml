@@ -1,0 +1,40 @@
+version: 2
+updates:
+  # Terraform modules/providers in infrastructure
+  - package-ecosystem: "terraform"
+    directory: "/infrastructure"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "terraform"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  # If you keep reusable modules here, Dependabot will check this folder too
+  - package-ecosystem: "terraform"
+    directory: "/infrastructure/modules"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "terraform"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  # GitHub Actions used in workflows (if/when present)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "github-actions"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
