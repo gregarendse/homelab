@@ -37,12 +37,22 @@ cloudflare_api_token = "your-cloudflare-api-token-here"
 
 # Required: The domain name to manage
 domain_name = "your-domain.com"
+
+# S3 Backend Configuration (for remote state data sources)
+# These values should match your .config.s3.tfbackend file
+s3_backend_endpoint   = "https://s3.eu-central-003.backblazeb2.com"
+s3_backend_region     = "eu-central-003"
+s3_backend_access_key = "YOUR_BACKBLAZE_ACCESS_KEY"
+s3_backend_secret_key = "YOUR_BACKBLAZE_SECRET_KEY"
+s3_backend_bucket     = "BUCKET"
 ```
 
 **Important Notes:**
 - The `.auto.tfvars` file is automatically loaded by Terraform
-- Keep your API token secure and never commit it to version control
+- Keep your API token and S3 credentials secure and never commit them to version control
+- A template file `.auto.tfvars.example` is provided for reference
 - The `domain_name` should be a domain you own and have added to Cloudflare
+- The S3 backend variables are used to access remote state from other projects (like the network infrastructure)
 
 ### 3. Cloudflare API Token Setup
 

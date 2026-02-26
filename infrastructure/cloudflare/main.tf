@@ -18,8 +18,8 @@ resource "cloudflare_dns_record" "echo" {
   content = data.terraform_remote_state.network.outputs.public_id.ip_address
 
   type    = "A"
-  ttl     = 3600 # ttl must be set to 1 when proxied is true
-  proxied = false
+  ttl     = 1 # ttl must be set to 1 when proxied is true
+  proxied = true
 }
 
 resource "cloudflare_dns_record" "pihole" {
@@ -30,8 +30,8 @@ resource "cloudflare_dns_record" "pihole" {
   content = data.terraform_remote_state.network.outputs.public_id.ip_address
 
   type    = "A"
-  ttl     = 3600 # ttl must be set to 1 when proxied is true
-  proxied = false
+  ttl     = 1 # ttl must be set to 1 when proxied is true
+  proxied = true
 }
 
 resource "cloudflare_dns_record" "unifi" {
@@ -42,6 +42,18 @@ resource "cloudflare_dns_record" "unifi" {
   content = data.terraform_remote_state.network.outputs.public_id.ip_address
 
   type    = "A"
-  ttl     = 3600 # ttl must be set to 1 when proxied is true
-  proxied = false
+  ttl     = 1 # ttl must be set to 1 when proxied is true
+  proxied = true
+}
+
+resource "cloudflare_dns_record" "home_assistant" {
+  zone_id = data.cloudflare_zone.zone.zone_id
+
+  name    = "home-assistant.${var.domain_name}"
+  comment = "Home Asistant record"
+  content = data.terraform_remote_state.network.outputs.public_id.ip_address
+
+  type    = "A"
+  ttl     = 1 # ttl must be set to 1 when proxied is true
+  proxied = true
 }
