@@ -80,7 +80,7 @@
             spec = {
               containers = [{
                 name = "pihole";
-                image = "pihole/pihole:2025.08.0";
+                image = "pihole/pihole:2026.02.0";
                 ports = [
                   {
                     name = "dns-tcp";
@@ -140,15 +140,20 @@
                     mountPath = "/etc/pihole/pihole.toml";
                     subPath = "pihole.toml";
                   }
+                  {
+                    # Override the default 64MB /dev/shm limit so FTL doesn't OOM
+                    name = "dshm";
+                    mountPath = "/dev/shm";
+                  }
                 ];
                 resources = {
                   requests = {
-                    memory = "128Mi";
-                    cpu = "100m";
+                    memory = "256Mi";
+                    cpu = "500m";
                   };
                   limits = {
                     memory = "512Mi";
-                    cpu = "500m";
+                    cpu = "1000m";
                   };
                 };
               }];
@@ -164,6 +169,14 @@
                 {
                   name = "pihole-config";
                   configMap.name = "pihole-config";
+                }
+                {
+                  # tmpfs-backed volume to replace the 64MB /dev/shm default
+                  name = "dshm";
+                  emptyDir = {
+                    medium = "Memory";
+                    sizeLimit = "256Mi";
+                  };
                 }
               ];
             };
