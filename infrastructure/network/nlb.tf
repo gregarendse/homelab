@@ -134,11 +134,6 @@ locals {
 }
 
 import {
-  to = oci_network_load_balancer_backend.backend["ubuntu-5-dns"]
-  id = "networkLoadBalancers/ocid1.networkloadbalancer.oc1.uk-london-1.amaaaaaai5e2auiaqs4iexdw6aoiuaqnujizytdsgsp3pwuoxs44tieh5fbq/backendSets/dns/backends/ocid1.instance.oc1.uk-london-1.anwgiljti5e2auicl5oal4opxomf5laamsmre5j7q73djslah3zaf7h4gaza.30053"
-}
-
-import {
   to = oci_network_load_balancer_backend.backend["ubuntu-5-http"]
   id = "networkLoadBalancers/ocid1.networkloadbalancer.oc1.uk-london-1.amaaaaaai5e2auiaqs4iexdw6aoiuaqnujizytdsgsp3pwuoxs44tieh5fbq/backendSets/http/backends/ocid1.instance.oc1.uk-london-1.anwgiljti5e2auicl5oal4opxomf5laamsmre5j7q73djslah3zaf7h4gaza.30080"
 }
@@ -154,10 +149,6 @@ import {
 import {
   to = oci_network_load_balancer_backend.backend["ubuntu-5-unifi-portal"]
   id = "networkLoadBalancers/ocid1.networkloadbalancer.oc1.uk-london-1.amaaaaaai5e2auiaqs4iexdw6aoiuaqnujizytdsgsp3pwuoxs44tieh5fbq/backendSets/unifi-portal/backends/ocid1.instance.oc1.uk-london-1.anwgiljti5e2auicl5oal4opxomf5laamsmre5j7q73djslah3zaf7h4gaza.30808"
-}
-import {
-  to = oci_network_load_balancer_backend.backend["ubuntu-6-dns"]
-  id = "networkLoadBalancers/ocid1.networkloadbalancer.oc1.uk-london-1.amaaaaaai5e2auiaqs4iexdw6aoiuaqnujizytdsgsp3pwuoxs44tieh5fbq/backendSets/dns/backends/ocid1.instance.oc1.uk-london-1.anwgiljsi5e2auicgg42szcckmowmt5d2wiiqzbzjxhqzczu3y5bte5k4slq.30053"
 }
 import {
   to = oci_network_load_balancer_backend.backend["ubuntu-6-http"]

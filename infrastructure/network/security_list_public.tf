@@ -22,30 +22,38 @@ resource "oci_core_security_list" "public" {
 
   dynamic "ingress_security_rules" {
     for_each = {
-      for i in local.ports : i.name => i
+      for combo in flatten([
+        for port in local.ports : [
+          for source in port.sources : {
+            key    = "${port.name}-${source}"
+            port   = port
+            source = source
+          }
+        ]
+      ]) : combo.key => combo
     }
-    iterator = port_rule
+    iterator = rule
 
     content {
-      # Allow inbound Kube API traffic from any source
-      description = port_rule.value.notes
-      protocol    = port_rule.value.protocol == "HTTPS" ? local.protocol_numbers.TCP : (port_rule.value.protocol == "TCP" ? local.protocol_numbers.TCP : local.protocol_numbers.UDP)
-      source      = port_rule.value.public == true ? "0.0.0.0/0" : "192.168.1.0/24"
+      description = rule.value.port.notes
+      protocol    = rule.value.port.protocol == "HTTPS" ? local.protocol_numbers.TCP : (rule.value.port.protocol == "TCP" ? local.protocol_numbers.TCP : local.protocol_numbers.UDP)
+      source      = rule.value.source
       source_type = "CIDR_BLOCK"
+      stateless   = false
 
       dynamic "tcp_options" {
-        for_each = contains(["TCP", "HTTP", "HTTPS"], port_rule.value.protocol) ? [1] : []
+        for_each = contains(["TCP", "HTTP", "HTTPS"], rule.value.port.protocol) ? [1] : []
         content {
-          min = port_rule.value.ports.listener
-          max = port_rule.value.ports.listener
+          min = rule.value.port.ports.listener
+          max = rule.value.port.ports.listener
         }
       }
 
       dynamic "udp_options" {
-        for_each = contains(["UDP"], port_rule.value.protocol) ? [1] : []
+        for_each = contains(["UDP", "DNS"], rule.value.port.protocol) ? [1] : []
         content {
-          min = port_rule.value.ports.listener
-          max = port_rule.value.ports.listener
+          min = rule.value.port.ports.listener
+          max = rule.value.port.ports.listener
         }
       }
     }
