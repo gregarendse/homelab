@@ -1,0 +1,32 @@
+# https://github.com/n8n-io/n8n
+---
+image:
+    repository: docker.n8n.io/n8nio/n8n
+    pullPolicy: Always
+    tag: "latest"
+
+volumes:
+    data:
+        source: "/mnt/data/n8n/data"
+        dest: "/home/node/.n8n"
+
+environment:
+    - name: TZ
+      value: Europe/London
+    - name: GENERIC_TIMEZONE
+      value: Europe/London
+
+ports:
+    http:
+        target: 5678
+        protocol: TCP
+
+ingress:
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: n8n.arendse.nom.za
+      tls: true
+      path: /
+      service:
+        name: http
