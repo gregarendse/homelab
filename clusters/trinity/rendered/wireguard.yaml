@@ -1,0 +1,30 @@
+# GENERATED FILE - DO NOT EDIT
+# Source: clusters/trinity/apps.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: trinity-wireguard
+  namespace: argocd
+  labels:
+    homelab.gregarendse/cluster: "trinity"
+    homelab.gregarendse/app: "wireguard"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: wireguard
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+  source:
+    repoURL: https://github.com/gregarendse/homelab.git
+    targetRevision: master
+    path: server
+    helm:
+      releaseName: wireguard
+      valueFiles:
+        - ../applications/wireguard/values.yaml

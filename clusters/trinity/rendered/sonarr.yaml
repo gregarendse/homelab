@@ -1,0 +1,30 @@
+# GENERATED FILE - DO NOT EDIT
+# Source: clusters/trinity/apps.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: trinity-sonarr
+  namespace: argocd
+  labels:
+    homelab.gregarendse/cluster: "trinity"
+    homelab.gregarendse/app: "sonarr"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sonarr
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+  source:
+    repoURL: https://github.com/gregarendse/homelab.git
+    targetRevision: master
+    path: server
+    helm:
+      releaseName: sonarr
+      valueFiles:
+        - ../applications/sonarr/values.yaml
