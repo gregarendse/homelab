@@ -168,7 +168,7 @@ spec:
         {{- end }}
 `))
 
-func appToElement(a app) appSetElement {
+func appToElement(a app) (appSetElement, error) {
 	e := appSetElement{
 		Name:      a.Name,
 		Namespace: a.DestNamespace(),
@@ -180,7 +180,10 @@ func appToElement(a app) appSetElement {
 		switch a.Helm.Kind {
 		case "path":
 			e.ChartPath = a.GetChartPath()
-			if len(a.Helm.ValueFiles) > 0 {
+			if len(a.Helm.ValueFiles) > 1 {
+				return e, fmt.Errorf("app %s: multiple valueFiles not supported, got %d", a.Name, len(a.Helm.ValueFiles))
+			}
+			if len(a.Helm.ValueFiles) == 1 {
 				e.ValueFiles = "../" + a.Helm.ValueFiles[0]
 			}
 		case "remote":
@@ -189,7 +192,7 @@ func appToElement(a app) appSetElement {
 			e.HelmTargetRevision = a.Helm.TargetRevision
 		}
 	}
-	return e
+	return e, nil
 }
 
 // --- helpers ---
@@ -248,27 +251,30 @@ var argocdGenerateCmd = &cobra.Command{
 		for _, cluster := range clusters {
 			inv, err := loadInventory(filepath.Join(argocdClustersDir, cluster, "apps.yaml"))
 			if err != nil {
-				continue
+				return fmt.Errorf("failed to load inventory for cluster %s: %w", cluster, err)
 			}
 			var elements []appSetElement
 			for _, a := range inv.Apps {
-				elements = append(elements, appToElement(a))
+				e, err := appToElement(a)
+				if err != nil {
+					return err
+				}
+				elements = append(elements, e)
 			}
 			outPath := filepath.Join(argocdClustersDir, cluster, "appset.yaml")
 			f, err := os.Create(outPath)
 			if err != nil {
 				return err
 			}
-			err = appSetTpl.Execute(f, appSetData{
+			defer f.Close()
+			if err := appSetTpl.Execute(f, appSetData{
 				Cluster:        cluster,
 				Elements:       elements,
 				RepoURL:        argocdRepoURL,
 				TargetRevision: argocdTargetRevision,
 				ArgoNamespace:  argocdArgoNamespace,
 				ArgoProject:    argocdArgoProject,
-			})
-			f.Close()
-			if err != nil {
+			}); err != nil {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Generated %s\n", outPath)

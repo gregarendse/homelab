@@ -16,6 +16,8 @@
 
 secret.yml
 secret.yaml
+result
+result.json
 
 # Terraform files
 .terraform/
