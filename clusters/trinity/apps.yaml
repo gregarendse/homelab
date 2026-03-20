@@ -1,0 +1,122 @@
+apps:
+  # In-repo "server" Helm chart releases (values live under applications/<app>/values.yaml)
+  - name: actual
+    type: helm
+    namespace: actual
+    helm:
+      kind: path
+      path: server
+      releaseName: actual
+      valueFiles:
+        - applications/actual/values.yaml
+  - name: deluge
+    type: helm
+    namespace: deluge
+    helm:
+      kind: path
+      path: server
+      releaseName: deluge
+      valueFiles:
+        - applications/deluge/values.yaml
+  - name: echo
+    type: helm
+    namespace: echo
+    helm:
+      kind: path
+      path: server
+      releaseName: echo
+      valueFiles:
+        - applications/echo/values.yaml
+  - name: plex
+    type: helm
+    namespace: plex
+    helm:
+      kind: path
+      path: server
+      releaseName: plex
+      valueFiles:
+        - applications/plex/values.yaml
+  - name: prowlarr
+    type: helm
+    namespace: prowlarr
+    helm:
+      kind: path
+      path: server
+      releaseName: prowlarr
+      valueFiles:
+        - applications/prowlarr/values.yaml
+  - name: radarr
+    type: helm
+    namespace: radarr
+    helm:
+      kind: path
+      path: server
+      releaseName: radarr
+      valueFiles:
+        - applications/radarr/values.yaml
+  - name: sabnzbd
+    type: helm
+    namespace: sabnzbd
+    helm:
+      kind: path
+      path: server
+      releaseName: sabnzbd
+      valueFiles:
+        - applications/sabnzbd/values.yaml
+  - name: sonarr
+    type: helm
+    namespace: sonarr
+    helm:
+      kind: path
+      path: server
+      releaseName: sonarr
+      valueFiles:
+        - applications/sonarr/values.yaml
+  - name: tautulli
+    type: helm
+    namespace: tautulli
+    helm:
+      kind: path
+      path: server
+      releaseName: tautulli
+      valueFiles:
+        - applications/tautulli/values.yaml
+  - name: wireguard
+    type: helm
+    namespace: wireguard
+    helm:
+      kind: path
+      path: server
+      releaseName: wireguard
+      valueFiles:
+        - applications/wireguard/values.yaml
+
+  # External chart releases (left as placeholders until repo URLs/versions are defined)
+  - name: cert-manager
+    type: helm
+    namespace: security
+    helm:
+      kind: remote
+      repoURL: https://charts.jetstack.io
+      chart: cert-manager
+      targetRevision: v1.18.2
+      releaseName: cert-manager
+  - name: ingress-nginx
+    type: helm
+    namespace: ingress-nginx
+    helm:
+      kind: remote
+      repoURL: https://kubernetes.github.io/ingress-nginx
+      chart: ingress-nginx
+      targetRevision: 4.13.2
+      releaseName: ingress-nginx
+  - name: vertical-pod-autoscaler
+    type: helm
+    namespace: kube-system
+    helm:
+      kind: remote
+      # TODO: set repoURL/chart/targetRevision to match your current install
+      repoURL: ""
+      chart: ""
+      targetRevision: ""
+      releaseName: vertical-pod-autoscaler
