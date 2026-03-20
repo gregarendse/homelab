@@ -2,21 +2,25 @@
   description = "UniFi Controller Kubernetes deployment with kubenix";
 
   inputs = {
-    kubenix.url = "github:hall/kubenix";
+    nixpkgs.url = "github:nixos/nixpkgs";
+    kubenix = {
+      url = "github:hall/kubenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, kubenix, ... }:
-    let
-      system = "x86_64-linux";
-      unifi-manifests = (kubenix.evalModules.${system} {
-        module = { ... }: {
-          imports = [ ./unifi.nix ];
-        };
-      }).config.kubernetes.result;
-    in {
-      packages.${system} = {
-        default = unifi-manifests;
-        manifests = unifi-manifests;
+  outputs = { self, nixpkgs, kubenix }: let
+    systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+
+    mkManifests = system: (kubenix.evalModules.${system} {
+      module = { ... }: {
+        imports = [ ./unifi.nix ];
       };
-    };
+    }).config.kubernetes.result;
+  in {
+    packages = nixpkgs.lib.genAttrs systems (system: {
+      default = mkManifests system;
+      manifests = mkManifests system;
+    });
+  };
 }

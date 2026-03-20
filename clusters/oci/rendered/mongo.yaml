@@ -22,7 +22,7 @@ spec:
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true
   source:
-    repoURL: https://github.com/gregarendse/homelab.git
+    repoURL: https://github.com/gregarendse/home-lab.git
     targetRevision: master
     path: clusters/oci/rendered/mongo
     directory:
