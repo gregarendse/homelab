@@ -1,0 +1,69 @@
+name: gitops-render-and-generate
+
+on:
+  pull_request:
+    branches: [master]
+
+concurrency:
+  group: gitops-render-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  render-and-generate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    if: "!contains(github.event.pull_request.title, '[skip gitops]')"
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Build CI tool
+        run: cd src/go/ci && go build -o "$GITHUB_WORKSPACE/ci-tool" .
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v12
+
+      - name: Enable Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v7
+
+      - name: Render kubenix apps
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ./ci-tool argocd list-rendered \
+          | while IFS=$'\t' read -r cluster app_name app_path; do
+            echo "Rendering $cluster/$app_name from $app_path"
+            test -d "$app_path"
+
+            rm -f "$app_path/result.json"
+            (cd "$app_path" && nix build --out-link result.json)
+            mkdir -p "clusters/$cluster/rendered/$app_name"
+            cp -L "$app_path/result.json" "clusters/$cluster/rendered/$app_name/result.json"
+          done
+
+      - name: Generate Argo CD ApplicationSets
+        run: |
+          ./ci-tool argocd generate \
+            --repo-url "https://github.com/${{ github.repository }}.git" \
+            --target-revision master
+
+      - name: Commit generated changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- clusters/*/rendered clusters/*/appset.yaml; then
+            echo "No changes"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add clusters/*/rendered clusters/*/appset.yaml
+          git commit -m "chore(gitops): update rendered manifests and appsets [skip gitops]"
+          git push
