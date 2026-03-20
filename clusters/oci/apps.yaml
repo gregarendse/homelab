@@ -11,6 +11,17 @@ apps:
         - applications/echo/values.yaml
 
   # External chart releases (leave as TODO until repo URLs/versions are confirmed)
+  # Managed by infrastructure/kubernetes/argocd.tf
+  #  - name: argocd
+  #    type: helm
+  #    namespace: argocd
+  #    helm:
+  #      kind: remote
+  #      repoURL: https://argoproj.github.io/argo-helm
+  #      chart: argo-cd
+  #      targetRevision: "9.4.15"
+  #      releaseName: argocd
+
   #  Managed by infrastructure/kubernetes/cert-manager.tf
   - name: cert-manager
     type: helm

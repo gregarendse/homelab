@@ -56,11 +56,16 @@ func (a app) GetChartPath() string {
 	return "server"
 }
 
-// --- ApplicationSet generation ---
+// --- Application generation ---
 
-type appSetElement struct {
+type appData struct {
 	Name               string
+	Cluster            string
 	Namespace          string
+	RepoURL            string
+	TargetRevision     string
+	ArgoNamespace      string
+	ArgoProject        string
 	Type               string
 	HelmKind           string
 	ChartPath          string
@@ -71,128 +76,86 @@ type appSetElement struct {
 	ValueFiles         string
 }
 
-type appSetData struct {
-	Cluster        string
-	Elements       []appSetElement
-	RepoURL        string
-	TargetRevision string
-	ArgoNamespace  string
-	ArgoProject    string
-}
-
-// Uses <% %> delimiters for generation-time templating.
-// {{ }} passes through literally as Argo CD ApplicationSet Go template expressions.
-var appSetTpl = template.Must(template.New("appset").Delims("<%", "%>").Parse(`# GENERATED FILE - DO NOT EDIT
-# Source: clusters/<% .Cluster %>/apps.yaml
+var appTpl = template.Must(template.New("app").Parse(`# GENERATED FILE - DO NOT EDIT
+# Source: clusters/{{ .Cluster }}/apps.yaml
 apiVersion: argoproj.io/v1alpha1
-kind: ApplicationSet
+kind: Application
 metadata:
-  name: <% .Cluster %>-apps
-  namespace: <% .ArgoNamespace %>
+  name: {{ .Cluster }}-{{ .Name }}
+  namespace: {{ .ArgoNamespace }}
   labels:
-    homelab.gregarendse/cluster: "<% .Cluster %>"
+    homelab.gregarendse/cluster: "{{ .Cluster }}"
+    homelab.gregarendse/app: "{{ .Name }}"
 spec:
-  goTemplate: true
-  goTemplateOptions: ["missingkey=zero"]
-  generators:
-    - list:
-        elements:
-<%- range .Elements %>
-          - name: <% .Name %>
-            namespace: <% .Namespace %>
-            type: <% .Type %>
-<%- if .HelmKind %>
-            helmKind: <% .HelmKind %>
-<%- end %>
-<%- if .ReleaseName %>
-            releaseName: <% .ReleaseName %>
-<%- end %>
-<%- if .ChartPath %>
-            chartPath: <% .ChartPath %>
-<%- end %>
-<%- if .Chart %>
-            chart: <% .Chart %>
-<%- end %>
-<%- if .HelmRepoURL %>
-            helmRepoURL: <% .HelmRepoURL %>
-<%- end %>
-<%- if .HelmTargetRevision %>
-            helmTargetRevision: <% .HelmTargetRevision %>
-<%- end %>
-<%- if .ValueFiles %>
-            valueFiles: <% .ValueFiles %>
-<%- end %>
-<%- end %>
-  template:
-    metadata:
-      name: <% .Cluster %>-{{.name}}
-      namespace: <% .ArgoNamespace %>
-      labels:
-        homelab.gregarendse/cluster: "<% .Cluster %>"
-        homelab.gregarendse/app: "{{.name}}"
-    spec:
-      project: <% .ArgoProject %>
-      destination:
-        server: https://kubernetes.default.svc
-        namespace: "{{.namespace}}"
-      syncPolicy:
-        automated:
-          prune: true
-          selfHeal: true
-        syncOptions:
-          - CreateNamespace=true
-          - ApplyOutOfSyncOnly=true
-      source:
-        {{- if eq .type "rendered" }}
-        repoURL: <% .RepoURL %>
-        targetRevision: <% .TargetRevision %>
-        path: clusters/<% .Cluster %>/rendered/{{.name}}
-        directory:
-          recurse: true
-        {{- else if eq .helmKind "path" }}
-        repoURL: <% .RepoURL %>
-        targetRevision: <% .TargetRevision %>
-        path: "{{.chartPath}}"
-        helm:
-          releaseName: "{{.releaseName}}"
-          {{- if .valueFiles }}
-          valueFiles:
-            - "{{.valueFiles}}"
-          {{- end }}
-        {{- else if eq .helmKind "remote" }}
-        repoURL: "{{.helmRepoURL}}"
-        targetRevision: "{{.helmTargetRevision}}"
-        chart: "{{.chart}}"
-        helm:
-          releaseName: "{{.releaseName}}"
-        {{- end }}
+  project: {{ .ArgoProject }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Namespace }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+{{- if eq .Type "rendered" }}
+  source:
+    repoURL: {{ .RepoURL }}
+    targetRevision: {{ .TargetRevision }}
+    path: clusters/{{ .Cluster }}/rendered/{{ .Name }}
+    directory:
+      recurse: true
+{{- else if eq .HelmKind "path" }}
+  source:
+    repoURL: {{ .RepoURL }}
+    targetRevision: {{ .TargetRevision }}
+    path: {{ .ChartPath }}
+    helm:
+      releaseName: {{ .ReleaseName }}
+{{- if .ValueFiles }}
+      valueFiles:
+        - {{ .ValueFiles }}
+{{- end }}
+{{- else if eq .HelmKind "remote" }}
+  source:
+    repoURL: {{ .HelmRepoURL }}
+    targetRevision: {{ .HelmTargetRevision }}
+    chart: {{ .Chart }}
+    helm:
+      releaseName: {{ .ReleaseName }}
+{{- end }}
 `))
 
-func appToElement(a app) (appSetElement, error) {
-	e := appSetElement{
-		Name:      a.Name,
-		Namespace: a.DestNamespace(),
-		Type:      a.Type,
+func appToData(a app, cluster string, repoURL, targetRevision, argoNamespace, argoProject string) (appData, error) {
+	d := appData{
+		Name:           a.Name,
+		Cluster:        cluster,
+		Namespace:      a.DestNamespace(),
+		RepoURL:        repoURL,
+		TargetRevision: targetRevision,
+		ArgoNamespace:  argoNamespace,
+		ArgoProject:    argoProject,
+		Type:           a.Type,
 	}
 	if a.Helm != nil {
-		e.HelmKind = a.Helm.Kind
-		e.ReleaseName = a.GetReleaseName()
+		d.HelmKind = a.Helm.Kind
+		d.ReleaseName = a.GetReleaseName()
 		switch a.Helm.Kind {
 		case "path":
-			e.ChartPath = a.GetChartPath()
+			d.ChartPath = a.GetChartPath()
 			if len(a.Helm.ValueFiles) > 1 {
-				return e, fmt.Errorf("app %s: multiple valueFiles not supported, got %d", a.Name, len(a.Helm.ValueFiles))
+				return d, fmt.Errorf("app %s: multiple valueFiles not supported, got %d", a.Name, len(a.Helm.ValueFiles))
 			}
 			if len(a.Helm.ValueFiles) == 1 {
-				e.ValueFiles = "../" + a.Helm.ValueFiles[0]
+				d.ValueFiles = "../" + a.Helm.ValueFiles[0]
 			}
 		case "remote":
-			e.Chart = a.Helm.Chart
-			e.HelmRepoURL = a.Helm.RepoURL
-			e.HelmTargetRevision = a.Helm.TargetRevision
+			d.Chart = a.Helm.Chart
+			d.HelmRepoURL = a.Helm.RepoURL
+			d.HelmTargetRevision = a.Helm.TargetRevision
 		}
 	}
-	return e, nil
+	return d, nil
 }
 
 // --- helpers ---
@@ -239,7 +202,7 @@ var argocdCmd = &cobra.Command{
 
 var argocdGenerateCmd = &cobra.Command{
 	Use:   "generate",
-	Short: "Generate Argo CD ApplicationSet from cluster inventories",
+	Short: "Generate Argo CD Application manifests from cluster inventories",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if argocdRepoURL == "" {
 			return fmt.Errorf("--repo-url is required")
@@ -253,31 +216,27 @@ var argocdGenerateCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("failed to load inventory for cluster %s: %w", cluster, err)
 			}
-			var elements []appSetElement
+			renderedDir := filepath.Join(argocdClustersDir, cluster, "rendered")
+			if err := os.MkdirAll(renderedDir, 0o755); err != nil {
+				return err
+			}
 			for _, a := range inv.Apps {
-				e, err := appToElement(a)
+				d, err := appToData(a, cluster, argocdRepoURL, argocdTargetRevision, argocdArgoNamespace, argocdArgoProject)
 				if err != nil {
 					return err
 				}
-				elements = append(elements, e)
+				outPath := filepath.Join(renderedDir, a.Name+".yaml")
+				f, err := os.Create(outPath)
+				if err != nil {
+					return err
+				}
+				if err := appTpl.Execute(f, d); err != nil {
+					f.Close()
+					return err
+				}
+				f.Close()
+				fmt.Fprintf(os.Stderr, "Generated %s\n", outPath)
 			}
-			outPath := filepath.Join(argocdClustersDir, cluster, "appset.yaml")
-			f, err := os.Create(outPath)
-			if err != nil {
-				return err
-			}
-			defer f.Close()
-			if err := appSetTpl.Execute(f, appSetData{
-				Cluster:        cluster,
-				Elements:       elements,
-				RepoURL:        argocdRepoURL,
-				TargetRevision: argocdTargetRevision,
-				ArgoNamespace:  argocdArgoNamespace,
-				ArgoProject:    argocdArgoProject,
-			}); err != nil {
-				return err
-			}
-			fmt.Fprintf(os.Stderr, "Generated %s\n", outPath)
 		}
 		return nil
 	},
