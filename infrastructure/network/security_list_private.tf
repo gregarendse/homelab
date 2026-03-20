@@ -27,7 +27,7 @@ resource "oci_core_security_list" "private" {
   dynamic "ingress_security_rules" {
     for_each = {
       for i in local.ports : i.name => i
-      if i.public == true && i.protocol != "TCP/UDP"
+      if contains(i.sources, "0.0.0.0/0") && i.protocol != "TCP/UDP"
     }
     iterator = port_rule
     content {
@@ -57,7 +57,7 @@ resource "oci_core_security_list" "private" {
   dynamic "ingress_security_rules" {
     for_each = {
       for i in local.ports : i.name => i
-      if i.public == false && contains(["TCP", "HTTP", "HTTPS", "UDP", "DNS"], i.protocol)
+      if !contains(i.sources, "0.0.0.0/0") && contains(["TCP", "HTTP", "HTTPS", "UDP", "DNS"], i.protocol)
     }
     iterator = port_rule
     content {
@@ -105,18 +105,6 @@ resource "oci_core_security_list" "private" {
     tcp_options {
       min = 6443
       max = 6443
-    }
-  }
-
-  ingress_security_rules {
-    description = "Pi-hole DNS"
-    stateless   = false
-    source      = "0.0.0.0/0"
-    source_type = "CIDR_BLOCK"
-    protocol    = local.protocol_numbers.UDP
-    udp_options {
-      min = 30053
-      max = 30053
     }
   }
 

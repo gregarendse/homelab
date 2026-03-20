@@ -1,0 +1,31 @@
+# GENERATED FILE - DO NOT EDIT
+# Source: clusters/trinity/apps.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: trinity-prowlarr
+  namespace: argocd
+  labels:
+    homelab.gregarendse/cluster: "trinity"
+    homelab.gregarendse/app: "prowlarr"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: prowlarr
+  # syncPolicy:
+  #   automated:
+  #     prune: true
+  #     selfHeal: true
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+  source:
+    repoURL: https://github.com/gregarendse/home-lab.git
+    targetRevision: master
+    path: server
+    helm:
+      releaseName: prowlarr
+      valueFiles:
+        - ../applications/prowlarr/values.yaml

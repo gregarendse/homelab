@@ -1,0 +1,23 @@
+configs:
+  params:
+    # Disable TLS on the server — Traefik handles TLS termination
+    server.insecure: true
+
+# SSO provider — not needed when using the built-in admin account
+dex:
+  enabled: false
+
+# Slack/email/webhook alerts on sync and health changes
+notifications:
+  enabled: false
+
+server:
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hostname: argocd.arendse.nom.za
+    # Automatically provisions a Let's Encrypt certificate via cert-manager
+    tls: true
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubernetes.io/tls-acme: "true"

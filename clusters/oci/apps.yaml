@@ -1,0 +1,95 @@
+apps:
+  # In-repo "server" Helm chart releases (values live under applications/<app>/values.yaml)
+  - name: echo
+    type: helm
+    namespace: echo
+    helm:
+      kind: path
+      path: server
+      releaseName: echo
+      valueFiles:
+        - applications/echo/values.yaml
+
+  # External chart releases (leave as TODO until repo URLs/versions are confirmed)
+  # Managed by infrastructure/kubernetes/argocd.tf
+  #  - name: argocd
+  #    type: helm
+  #    namespace: argocd
+  #    helm:
+  #      kind: remote
+  #      repoURL: https://argoproj.github.io/argo-helm
+  #      chart: argo-cd
+  #      targetRevision: "9.4.15"
+  #      releaseName: argocd
+
+  #  Managed by infrastructure/kubernetes/cert-manager.tf
+  - name: cert-manager
+    type: helm
+    namespace: security
+    helm:
+      kind: remote
+      repoURL: https://charts.jetstack.io
+      chart: cert-manager
+      targetRevision: v1.18.2
+      releaseName: cert-manager
+
+  ## Ignore : ToDo: enroll
+  #  - name: cilium
+  #    type: helm
+  #    namespace: kube-system
+  #    helm:
+  #      kind: remote
+  #      repoURL: ""        # TODO
+  #      chart: ""          # TODO
+  #      targetRevision: "" # TODO
+  #      releaseName: cilium
+
+  # Managed by infrastructure/kubernetes/longhorn.tf
+  #  - name: longhorn
+  #    type: helm
+  #    namespace: longhorn-system
+  #    helm:
+  #      kind: remote
+  #      repoURL: ""        # TODO
+  #      chart: ""          # TODO
+  #      targetRevision: "" # TODO
+  #      releaseName: longhorn
+
+  # Managed by infrastructure/kubernetes/traefik.tf
+  #  - name: traefik
+  #    type: helm
+  #    namespace: traefik
+  #    helm:
+  #      kind: remote
+  #      repoURL: ""        # TODO
+  #      chart: ""          # TODO
+  #      targetRevision: "" # TODO
+  #      releaseName: traefik
+
+  # Managed by infrastructure/kubernetes/vertical-pod-autoscaler.tf
+  #  - name: vertical-pod-autoscaler
+  #    type: helm
+  #    namespace: kube-system
+  #    helm:
+  #      kind: remote
+  #      repoURL: ""        # TODO
+  #      chart: ""          # TODO
+  #      targetRevision: "" # TODO
+  #      releaseName: vertical-pod-autoscaler
+
+  # Rendered (kubenix/Nix) apps -> CI renders to dist/oci/<app> and Argo applies YAML from there
+  - name: pihole
+    type: rendered
+    path: applications/pihole
+
+  - name: home-assistant
+    type: rendered
+    path: applications/home-assistant
+
+  - name: mongo
+    type: rendered
+    path: applications/mongo
+
+  - name: unifi
+    type: rendered
+    path: applications/unifi
