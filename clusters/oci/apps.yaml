@@ -1,136 +1,79 @@
----
-apiVersion: v1
-kind: List
-metadata:
-  name: app-inventory
-items:
-  - apiVersion: helm.toolkit.fluxcd.io/v2alpha1
-    kind: HelmRelease
-    metadata:
-      name: echo
-      namespace: apps
-    spec:
+apps:
+  # In-repo "server" Helm chart releases (values live under applications/<app>/values.yaml)
+  - name: echo
+    type: helm
+    namespace: echo
+    helm:
+      kind: path
+      path: server
       releaseName: echo
-      chart:
-        spec:
-          chart: ./applications/echo
-          source:
-            type: HelmRepository
-            name: in-repo-chart-server
-      values:
-        - ./applications/echo/values.yaml
-  - apiVersion: helm.toolkit.fluxcd.io/v2alpha1
-    kind: HelmRelease
-    metadata:
-      name: cert-manager
-      namespace: cert-manager
-    spec:
+      valueFiles:
+        - applications/echo/values.yaml
+
+  # External chart releases (leave as TODO until repo URLs/versions are confirmed)
+  - name: cert-manager
+    type: helm
+    namespace: security
+    helm:
+      kind: remote
+      repoURL: https://charts.jetstack.io
+      chart: cert-manager
+      targetRevision: v1.18.2
       releaseName: cert-manager
-      chart:
-        spec:
-          chart: cert-manager
-          source:
-            type: HelmRepository
-            url: https://charts.jetstack.io
-      values:
-        - ./applications/cert-manager/values.yaml
-  - apiVersion: helm.toolkit.fluxcd.io/v2alpha1
-    kind: HelmRelease
-    metadata:
-      name: cilium
-      namespace: apps
-    spec:
+
+  - name: cilium
+    type: helm
+    namespace: kube-system
+    helm:
+      kind: remote
+      repoURL: ""        # TODO
+      chart: ""          # TODO
+      targetRevision: "" # TODO
       releaseName: cilium
-      chart:
-        spec:
-          chart: cilium
-          source:
-            type: HelmRepository
-            name: TODO/repoURL
-            url: TODO/chart
-      values:
-        - ./applications/cilium/values.yaml
-  - apiVersion: helm.toolkit.fluxcd.io/v2alpha1
-    kind: HelmRelease
-    metadata:
-      name: longhorn
-      namespace: apps
-    spec:
+
+  - name: longhorn
+    type: helm
+    namespace: longhorn-system
+    helm:
+      kind: remote
+      repoURL: ""        # TODO
+      chart: ""          # TODO
+      targetRevision: "" # TODO
       releaseName: longhorn
-      chart:
-        spec:
-          chart: longhorn
-          source:
-            type: HelmRepository
-            name: TODO/repoURL
-            url: TODO/chart
-      values:
-        - ./applications/longhorn/values.yaml
-  - apiVersion: helm.toolkit.fluxcd.io/v2alpha1
-    kind: HelmRelease
-    metadata:
-      name: traefik
-      namespace: apps
-    spec:
+
+  - name: traefik
+    type: helm
+    namespace: traefik
+    helm:
+      kind: remote
+      repoURL: ""        # TODO
+      chart: ""          # TODO
+      targetRevision: "" # TODO
       releaseName: traefik
-      chart:
-        spec:
-          chart: traefik
-          source:
-            type: HelmRepository
-            name: TODO/repoURL
-            url: TODO/chart
-      values:
-        - ./applications/traefik/values.yaml
-  - apiVersion: helm.toolkit.fluxcd.io/v2alpha1
-    kind: HelmRelease
-    metadata:
-      name: vertical-pod-autoscaler
-      namespace: apps
-    spec:
+
+  - name: vertical-pod-autoscaler
+    type: helm
+    namespace: kube-system
+    helm:
+      kind: remote
+      repoURL: ""        # TODO
+      chart: ""          # TODO
+      targetRevision: "" # TODO
       releaseName: vertical-pod-autoscaler
-      chart:
-        spec:
-          chart: vertical-pod-autoscaler
-          source:
-            type: HelmRepository
-            name: TODO/repoURL
-            url: TODO/chart
-      values:
-        - ./applications/vertical-pod-autoscaler/values.yaml
-  - apiVersion: apps/v1
-    kind: Application
-    metadata:
-      name: pihole
-      namespace: apps
-    spec:
-      source:
-        repoURL: ./applications/pihole
-        path: .
-  - apiVersion: apps/v1
-    kind: Application
-    metadata:
-      name: home-assistant
-      namespace: apps
-    spec:
-      source:
-        repoURL: ./applications/home-assistant
-        path: .
-  - apiVersion: apps/v1
-    kind: Application
-    metadata:
-      name: mongo
-      namespace: apps
-    spec:
-      source:
-        repoURL: ./applications/mongo
-        path: .
-  - apiVersion: apps/v1
-    kind: Application
-    metadata:
-      name: unifi
-      namespace: apps
-    spec:
-      source:
-        repoURL: ./applications/unifi
-        path: .
+
+  # Rendered (kubenix/Nix) apps -> CI renders to dist/oci/<app> and Argo applies YAML from there
+  - name: pihole
+    type: rendered
+    path: applications/pihole
+
+  - name: home-assistant
+    type: rendered
+    path: applications/home-assistant
+
+  - name: mongo
+    type: rendered
+    path: applications/mongo
+
+  - name: unifi
+    type: rendered
+    path: applications/unifi
