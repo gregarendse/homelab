@@ -2,6 +2,7 @@ resource "helm_release" "traefik" {
   name      = "traefik"
   namespace = "traefik"
   chart     = "oci://ghcr.io/traefik/helm/traefik"
+  version   = "37.1.2"
 
   create_namespace = true
   atomic           = true
@@ -9,6 +10,9 @@ resource "helm_release" "traefik" {
   skip_crds        = false
 
   set = [{
+    name  = "deployment.kind"
+    value = "DaemonSet"
+    }, {
     name  = "service.type"
     value = "NodePort"
     }, {
