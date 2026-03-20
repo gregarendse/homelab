@@ -101,6 +101,7 @@ apps:
       chart: cert-manager
       targetRevision: v1.18.2
       releaseName: cert-manager
+
   - name: ingress-nginx
     type: helm
     namespace: ingress-nginx
@@ -110,13 +111,16 @@ apps:
       chart: ingress-nginx
       targetRevision: 4.13.2
       releaseName: ingress-nginx
-  - name: vertical-pod-autoscaler
-    type: helm
-    namespace: kube-system
-    helm:
-      kind: remote
-      # TODO: set repoURL/chart/targetRevision to match your current install
-      repoURL: ""
-      chart: ""
-      targetRevision: ""
-      releaseName: vertical-pod-autoscaler
+
+
+#      ToDo: enroll
+#  - name: vertical-pod-autoscaler
+#    type: helm
+#    namespace: kube-system
+#    helm:
+#      kind: remote
+#      # TODO: set repoURL/chart/targetRevision to match your current install
+#      repoURL: ""
+#      chart: ""
+#      targetRevision: ""
+#      releaseName: vertical-pod-autoscaler
