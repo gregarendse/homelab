@@ -57,3 +57,15 @@ resource "cloudflare_dns_record" "home_assistant" {
   ttl     = 1 # ttl must be set to 1 when proxied is true
   proxied = true
 }
+
+resource "cloudflare_dns_record" "argo_cd" {
+  zone_id = data.cloudflare_zone.zone.zone_id
+
+  name    = "argocd.${var.domain_name}"
+  comment = "ArgoCD"
+  content = data.terraform_remote_state.network.outputs.public_id.ip_address
+
+  type    = "A"
+  ttl     = 1 # ttl must be set to 1 when proxied is true
+  proxied = true
+}
