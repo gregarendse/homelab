@@ -24,3 +24,5 @@ result.json
 .terraform.lock.hcl
 *.tfstate
 *.tfstate.backup
+
+!clusters/*/rendered/*/result.json
