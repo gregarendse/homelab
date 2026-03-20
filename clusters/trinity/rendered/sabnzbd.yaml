@@ -13,15 +13,16 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: sabnzbd
+  # syncPolicy:
+  #   automated:
+  #     prune: true
+  #     selfHeal: true
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true
   source:
-    repoURL: https://github.com/gregarendse/homelab.git
+    repoURL: https://github.com/gregarendse/home-lab.git
     targetRevision: master
     path: server
     helm:

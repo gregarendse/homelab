@@ -15,3 +15,31 @@ resource "helm_release" "argocd" {
     file("${path.module}/argocd.yaml")
   ]
 }
+
+# Root Application — bootstraps Argo CD to watch the rendered directory
+resource "kubernetes_manifest" "argocd_root" {
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
+    metadata = {
+      name      = "oci-root"
+      namespace = "argocd"
+    }
+    spec = {
+      project = "default"
+      source = {
+        repoURL        = "https://github.com/gregarendse/homelab.git"
+        targetRevision = "master"
+        path           = "clusters/oci/rendered"
+        directory = {
+          include = "*.yaml"
+        }
+      }
+      destination = {
+        server    = "https://kubernetes.default.svc"
+        namespace = "argocd"
+      }
+    }
+  }
+  depends_on = [helm_release.argocd]
+}

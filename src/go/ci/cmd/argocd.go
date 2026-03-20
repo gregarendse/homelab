@@ -91,10 +91,11 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: {{ .Namespace }}
+  # syncPolicy:
+  #   automated:
+  #     prune: true
+  #     selfHeal: true
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true
