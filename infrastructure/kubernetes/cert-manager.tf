@@ -37,7 +37,7 @@ resource "kubernetes_manifest" "cluster_issuer" {
       acme = {
         server : "https://acme-v02.api.letsencrypt.org/directory"
         # Email address used for ACME registration
-        email : "greg.arendse@gmail.com"
+        email : var.cert_manager_email
         # Name of a secret used to store the ACME account private key
         privateKeySecretRef = {
           name : "letsencrypt-prod"

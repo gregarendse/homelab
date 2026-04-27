@@ -81,7 +81,7 @@ The configuration includes:
   - Web interface service (`ClusterIP`)
 - **Ingress**: HTTPS access with Let's Encrypt certificates
 - **ConfigMaps**: Custom dnsmasq rules (`custom-dnsmasq`) and Pi-hole FTL config (`pihole-config`)
-- **Resources**: CPU request 500m / limit 1000m, memory request 256Mi / limit 512Mi
+- **Resources**: CPU request 500m / limit 1000m, memory request 320Mi / limit 768Mi
 
 ### DNS Configuration
 
@@ -95,7 +95,7 @@ The deployment includes:
 - The deployment uses `strategy.type: Recreate` to avoid conflicts with persistent storage
 - Pi-hole data persists across pod restarts via PVC
 - Custom dnsmasq configuration is mounted from the `custom-dnsmasq` ConfigMap
-- A `dshm` `emptyDir` volume (256Mi, `medium: Memory`) is mounted at `/dev/shm` to override the Kubernetes default of 64MB. Pi-hole FTL stores its DNS query database in shared memory and will crash with `No space left on device` if `/dev/shm` is too small.
+- A `dshm` `emptyDir` volume (128Mi, `medium: Memory`) is mounted at `/dev/shm` to override the Kubernetes default of 64MB. Pi-hole FTL stores its DNS query database in shared memory and will crash with `No space left on device` if `/dev/shm` is too small. Note: tmpfs volumes count against the container memory limit, so the memory limit must account for both FTL process memory and `/dev/shm` usage.
 
 ## Troubleshooting
 

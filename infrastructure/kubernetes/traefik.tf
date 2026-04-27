@@ -9,6 +9,23 @@ resource "helm_release" "traefik" {
   cleanup_on_fail  = true
   skip_crds        = false
 
+  # Traefik runs behind an external firewall/NAT. Publish the single public IP once here
+  # so ingress status contains a stable address that ExternalDNS can use for every ingress.
+  values = [
+    yamlencode({
+      providers = {
+        kubernetesIngress = {
+          publishedService = {
+            enabled = false
+          }
+        }
+      }
+      additionalArguments = [
+        "--providers.kubernetesingress.ingressendpoint.ip=${var.ingress_public_ip}"
+      ]
+    })
+  ]
+
   set = [{
     name  = "deployment.kind"
     value = "DaemonSet"

@@ -93,3 +93,12 @@ apps:
   - name: unifi
     type: rendered
     path: applications/unifi
+
+  - name: ollama
+    type: rendered
+    path: applications/ollama
+
+  - name: open-webui
+    type: rendered
+    path: applications/open-webui
+

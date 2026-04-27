@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
 
-set -o noclobber  # Avoid overlay files (echo "hi" > foo) 
-set -o errexit    # Used to exit upon error, avoiding cascading errors 
-set -o pipefail   # Unveils hidden failures 
-set -o nounset    # Exposes unset variables 
+set -o noclobber  # Avoid overlay files (echo "hi" > foo)
+set -o errexit    # Used to exit upon error, avoiding cascading errors
+set -o pipefail   # Unveils hidden failures
+set -o nounset    # Exposes unset variables
 
 # Change to the script directory
 cd "$(dirname "$0")"
+
+declare -a EXTRA_TLS_SANS=()
+if [[ -n "${K3S_EXTRA_TLS_SANS:-}" ]]; then
+    IFS=' ' read -r -a EXTRA_TLS_SANS <<< "${K3S_EXTRA_TLS_SANS}"
+    echo "Additional TLS SANs: ${EXTRA_TLS_SANS[*]}"
+fi
 
 function fetch_manifests() {
     local RELEASE="v1.33.0"
@@ -66,6 +72,21 @@ function build_k3s_config() {
   local FAULT_DOMAIN=$(echo "$METADATA_JSON" | jq --raw-output '.faultDomain')
   local NODE_EXTERNAL_IP=$(ssh ${user}@${tailscale_addr} ip addr show |grep -A 3 'enp0' | grep 'inet ' | awk '{print $2}' | cut -d'/' -f1)
 
+    local tls_sans=(
+        "kubernetes.arendse.nom.za"
+        "${tailscale_addr}"
+        "${NODE_EXTERNAL_IP}"
+    )
+    if [[ ${#EXTRA_TLS_SANS[@]} -gt 0 ]]; then
+        tls_sans+=("${EXTRA_TLS_SANS[@]}")
+    fi
+
+    local tls_san_yaml=""
+    for san in "${tls_sans[@]}"; do
+        tls_san_yaml+="- ${san}"$'\n'
+    done
+    tls_san_yaml=${tls_san_yaml%$'\n'}
+
 # "Failed to scrape node" err="Get \"https://10.100.1.148:10250/metrics/resource\": tls: failed to verify certificate: x509: certificate is valid for 127.0.0.1, 100.105.108.104, fd7a:115c:a1e0::a001:6c74, not 10.100.1.148" node="ubuntu-4"
 # "Failed to scrape node" err="Get \"https://10.100.1.211:10250/metrics/resource\": dial tcp 10.100.1.211:10250: connect: no route to host" node="ubuntu-3"
 
@@ -76,9 +97,7 @@ function build_k3s_config() {
 flannel-backend: none
 disable-network-policy: true
 tls-san:
-- kubernetes.arendse.nom.za
-- ${tailscale_addr}
-- ${NODE_EXTERNAL_IP}
+${tls_san_yaml}
 disable-cloud-controller: true
 kube-controller-manager-arg:
 - cloud-provider=external

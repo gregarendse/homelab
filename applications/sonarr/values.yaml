@@ -1,6 +1,6 @@
 ---
 image:
-    repository: linuxserver/sonarr
+    repository: lscr.io/linuxserver/sonarr
     # Overrides the image tag whose default is the chart appVersion.
     pullPolicy: Always
 

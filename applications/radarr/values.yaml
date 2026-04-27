@@ -1,42 +1,48 @@
 ---
 image:
-    repository: lscr.io/linuxserver/radarr
-    # Overrides the image tag whose default is the chart appVersion.
-    pullPolicy: Always
-    tag: nightly
+  repository: lscr.io/linuxserver/radarr
+  # Overrides the image tag whose default is the chart appVersion.
+  pullPolicy: Always
 
 volumes:
-    config:
-        source: "/mnt/data/radarr/config"
-        dest: "/config"
-    downloads:
-        source: "/red/downloads"
-        dest: "/red/downloads"
-    blackhole:
-        source: "/red/blackhole"
-        dest: "/red/blackhole"
-    movies:
-        source: "/red/Movies"
-        dest: "/movies"
+
+  config:
+    source: "/mnt/data/radarr/config"
+    dest: "/config"
+
+  downloads:
+    source: "/red/downloads"
+    dest: "/red/downloads"
+
+  blackhole:
+    source: "/red/blackhole"
+    dest: "/red/blackhole"
+
+  mega-blackhole:
+    source: "/red/mega/blackhole"
+    dest: "/red/mega/blackhole"
+
+  movies:
+    source: "/red/Movies"
+    dest: "/movies"
 
 
 environment:
-    - name: PUID
-      value: "120"
-    - name: "PGID" 
-      value: "119"
-    - name: TZ
-      value: Africa/Johannaesburg
+  - name: PUID
+    value: "120"
+  - name: "PGID"
+    value: "119"
+  - name: TZ
+    value: Africa/Johannaesburg
 
 ports:
-    http:
-        target: 7878
-        protocol: TCP
+  http:
+    target: 7878
+    protocol: TCP
 
 ingress:
   annotations:
-#     kubernetes.io/ingress.class: public
-#     kubernetes.io/tls-acme: "true"
+    kubernetes.io/tls-acme: "true"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
   hosts:
     - host: arendse.nom.za

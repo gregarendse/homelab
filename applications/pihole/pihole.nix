@@ -80,7 +80,7 @@
             spec = {
               containers = [{
                 name = "pihole";
-                image = "pihole/pihole:2026.02.0";
+                image = "pihole/pihole:2026.04.1";
                 ports = [
                   {
                     name = "dns-tcp";
@@ -148,11 +148,13 @@
                 ];
                 resources = {
                   requests = {
-                    memory = "256Mi";
+                    # /dev/shm 128Mi + 256Mi
+                    memory = "384Mi";
                     cpu = "500m";
                   };
                   limits = {
-                    memory = "512Mi";
+                    # /dev/shm 128Mi + 512Mi
+                    memory = "640Mi";
                     cpu = "1000m";
                   };
                 };
@@ -175,7 +177,7 @@
                   name = "dshm";
                   emptyDir = {
                     medium = "Memory";
-                    sizeLimit = "256Mi";
+                    sizeLimit = "128Mi";
                   };
                 }
               ];
@@ -196,6 +198,10 @@
         };
         spec = {
           type = "NodePort";
+          # Preserve the real client IP instead of SNAT-ing to the node's
+          # Cilium internal IP. Without this, all home network clients appear
+          # as internal node IPs, causing Pi-hole to rate-limit them.
+          externalTrafficPolicy = "Local";
           selector = {
             app = "pihole";
           };
@@ -270,7 +276,8 @@
           name = "pihole-ingress";
           namespace = "pihole";
           annotations = {
-            "nginx.ingress.kubernetes.io/rewrite-target" = "/";
+            "external-dns.alpha.kubernetes.io/cloudflare-proxied" = "true";
+            "external-dns.alpha.kubernetes.io/cloudflare-tags"   = "app=pihole,env=prod,owner=homelab";
             "cert-manager.io/cluster-issuer" = "letsencrypt-prod";
           };
         };

@@ -168,6 +168,9 @@
           namespace = "home-assistant";
           annotations = {
 
+            "external-dns.alpha.kubernetes.io/cloudflare-proxied" = "true";
+            "external-dns.alpha.kubernetes.io/cloudflare-tags"   = "app=home-assistant,env=prod,owner=homelab";
+
             # Optional: Enable if you have cert-manager
             # "cert-manager.io/cluster-issuer" = "letsencrypt-prod";
           };

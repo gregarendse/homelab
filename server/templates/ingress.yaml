@@ -19,6 +19,8 @@ spec:
   ingressClassName: {{ $root.Values.ingress.className | quote }}
   {{- else if $root.Values.ingress.class }}
   ingressClassName: {{ $root.Values.ingress.class | quote }}
+  {{- else }}
+  ingressClassName: "public"
   {{- end }}
 
   tls:

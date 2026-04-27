@@ -24,7 +24,6 @@ function help() {
 if [ ! -d "/mnt/data/${applicaiton}" ];
 then
     echo "No 'home' directory"
-    exit 1
 fi
 
 helm upgrade --install "${application}" server --values="applications/${application}/values.yaml" --namespace="${application}" --create-namespace --atomic

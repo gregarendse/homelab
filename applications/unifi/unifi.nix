@@ -167,6 +167,8 @@
           name = "unifi-controller";
           namespace = "unifi";
           annotations = {
+            "external-dns.alpha.kubernetes.io/cloudflare-proxied" = "true";
+            "external-dns.alpha.kubernetes.io/cloudflare-tags"   = "app=unifi,env=prod,owner=homelab";
             "cert-manager.io/cluster-issuer" = "letsencrypt-prod";
             "traefik.ingress.kubernetes.io/router.entrypoints" = "websecure";
             "traefik.ingress.kubernetes.io/router.tls" = "true";
