@@ -49,13 +49,10 @@
           template = {
             metadata.labels = { app = "openclaw"; };
             spec = {
-              # openclaw image runs as node (uid 1000); fsGroup ensures
-              # the PVC is group-writable on mount.
-              securityContext = {
-                runAsUser = 1000;
-                runAsGroup = 1000;
-                fsGroup = 1000;
-              };
+              # Pod-level: sets ownership of PVC mounts via fsGroup.
+              # runAsUser/Group are NOT set here so the init container can
+              # override to root without conflict.
+              securityContext.fsGroup = 1000;
 
               initContainers = [
                 {
@@ -96,6 +93,7 @@
                   securityContext = {
                     runAsUser = 0;
                     runAsGroup = 0;
+                    allowPrivilegeEscalation = false;
                   };
                   volumeMounts = [
                     { name = "home"; mountPath = "/data"; }
@@ -160,8 +158,20 @@
                     #   valueFrom.secretKeyRef = { name = "openclaw-secrets"; key = "DISCORD_BOT_TOKEN"; };
                     # }
                   ];
+                  securityContext = {
+                    runAsNonRoot             = true;
+                    runAsUser                = 1000;
+                    runAsGroup               = 1000;
+                    allowPrivilegeEscalation = false;
+                    readOnlyRootFilesystem   = true;
+                    capabilities.drop        = [ "ALL" ];
+                  };
                   volumeMounts = [
-                    { name = "home"; mountPath = "/home/node/.openclaw"; }
+                    { name = "home";    mountPath = "/home/node/.openclaw"; }
+                    # readOnlyRootFilesystem requires an explicit writable /tmp.
+                    # If openclaw writes to other paths at runtime (e.g. ~/.npm,
+                    # ~/.config), add emptyDir mounts here and open a PR to document them.
+                    { name = "tmp";     mountPath = "/tmp"; }
                   ];
                   readinessProbe = {
                     httpGet = { path = "/readyz"; port = "http"; };
@@ -191,8 +201,10 @@
               ];
 
               volumes = [
-                { name = "home"; persistentVolumeClaim.claimName = "openclaw-home"; }
+                { name = "home";           persistentVolumeClaim.claimName = "openclaw-home"; }
                 { name = "workspace-seed"; configMap.name = "openclaw-workspace-seed"; }
+                # Writable scratch space required by readOnlyRootFilesystem = true.
+                { name = "tmp";            emptyDir = {}; }
               ];
             };
           };
