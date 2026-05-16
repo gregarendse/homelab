@@ -114,49 +114,26 @@
                   ports = [
                     { name = "http"; containerPort = 18789; protocol = "TCP"; }
                   ];
+                  # Non-secret config — values that are safe to have in the manifest.
                   env = [
                     # Disable mDNS — does not work reliably in Kubernetes bridge networking.
                     { name = "OPENCLAW_DISABLE_BONJOUR"; value = "1"; }
-
-                    # Gateway auth token — generate with: openssl rand -hex 32
-                    {
-                      name = "OPENCLAW_GATEWAY_TOKEN";
-                      valueFrom.secretKeyRef = {
-                        name = "openclaw-secrets";
-                        key = "OPENCLAW_GATEWAY_TOKEN";
-                      };
-                    }
-
-                    # --- LLM backend: choose one option ---
-
-                    # Option A: Ollama (local, free — default)
+                    # LLM backend base URL for Ollama (local, free — default).
+                    # To switch to a cloud provider, remove this and add the
+                    # relevant API key to openclaw-secrets instead
+                    # (e.g. GEMINI_API_KEY, GROQ_API_KEY).
                     { name = "OLLAMA_BASE_URL"; value = "http://ollama.ollama.svc.cluster.local:11434"; }
-
-                    # Option B: Gemini Flash (comment out Option A, uncomment below)
-                    # {
-                    #   name = "GEMINI_API_KEY";
-                    #   valueFrom.secretKeyRef = { name = "openclaw-secrets"; key = "GEMINI_API_KEY"; };
-                    # }
-
-                    # Option C: Groq (comment out Options A & B, uncomment below)
-                    # {
-                    #   name = "GROQ_API_KEY";
-                    #   valueFrom.secretKeyRef = { name = "openclaw-secrets"; key = "GROQ_API_KEY"; };
-                    # }
-
-                    # --- Messaging channels ---
-
-                    # Telegram
-                    # {
-                    #   name = "TELEGRAM_BOT_TOKEN";
-                    #   valueFrom.secretKeyRef = { name = "openclaw-secrets"; key = "TELEGRAM_BOT_TOKEN"; };
-                    # }
-
-                    # Discord
-                    # {
-                    #   name = "DISCORD_BOT_TOKEN";
-                    #   valueFrom.secretKeyRef = { name = "openclaw-secrets"; key = "DISCORD_BOT_TOKEN"; };
-                    # }
+                  ];
+                  # All secrets injected from the openclaw-secrets Secret.
+                  # Add or remove keys in the Secret without touching this manifest.
+                  # Expected keys (all optional except OPENCLAW_GATEWAY_TOKEN):
+                  #   OPENCLAW_GATEWAY_TOKEN  — required; generate: openssl rand -hex 32
+                  #   GEMINI_API_KEY          — cloud LLM (Option B)
+                  #   GROQ_API_KEY            — cloud LLM (Option C)
+                  #   TELEGRAM_BOT_TOKEN      — messaging channel
+                  #   DISCORD_BOT_TOKEN       — messaging channel
+                  envFrom = [
+                    { secretRef.name = "openclaw-secrets"; }
                   ];
                   securityContext = {
                     runAsNonRoot             = true;
@@ -167,11 +144,11 @@
                     capabilities.drop        = [ "ALL" ];
                   };
                   volumeMounts = [
-                    { name = "home";    mountPath = "/home/node/.openclaw"; }
+                    { name = "home"; mountPath = "/home/node/.openclaw"; }
                     # readOnlyRootFilesystem requires an explicit writable /tmp.
                     # If openclaw writes to other paths at runtime (e.g. ~/.npm,
                     # ~/.config), add emptyDir mounts here and open a PR to document them.
-                    { name = "tmp";     mountPath = "/tmp"; }
+                    { name = "tmp";  mountPath = "/tmp"; }
                   ];
                   readinessProbe = {
                     httpGet = { path = "/readyz"; port = "http"; };
