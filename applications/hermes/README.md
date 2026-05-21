@@ -4,106 +4,65 @@ Self-hosted autonomous AI agent by [Nous Research](https://nousresearch.com),
 deployed as a Kubernetes workload on the OCI cluster.
 
 - **Docs:** <https://hermes-agent.nousresearch.com/docs>
-- **Image:** `nousresearch/hermes-agent:latest`
+- **Image:** `nousresearch/hermes-agent:latest` (multi-arch, includes `linux/arm64`)
 - **Ports:** `8642` (gateway / OpenAI-compatible API), `9119` (web dashboard)
-
----
-
-## ⚠️ ARM64 Check — do this before enrolling
-
-The OCI nodes are `aarch64` (ARM64).  Confirm the official image ships a
-`linux/arm64` layer **before** adding this app to `clusters/oci/apps.yaml`:
-
-```bash
-docker manifest inspect nousresearch/hermes-agent:latest \
-  | jq '.manifests[].platform'
-```
-
-You need to see `"architecture": "arm64"` in the output.  If it is absent:
-
-- Check the [GitHub releases](https://github.com/NousResearch/hermes-agent/releases)
-  for an ARM-specific tag.
-- Open an issue on the upstream repo requesting multi-arch builds.
-- As a workaround, deploy on the `trinity` cluster (if that is x86) instead.
 
 ---
 
 ## Prerequisites
 
-### 1. Secrets
+### 1. Longhorn storage
 
-Create the `hermes-secrets` Secret in the `hermes` namespace **before** the
-pod starts.  The minimum required key is `API_SERVER_KEY`.
+This app requires Longhorn (`storageClassName: longhorn`). Confirm Longhorn is
+enrolled and healthy in `clusters/oci/apps.yaml` before proceeding.
 
-```bash
-# Generate a strong API server key
-API_SERVER_KEY=$(openssl rand -hex 32)
+### 2. Secrets
 
-kubectl create secret generic hermes-secrets \
-  --namespace hermes \
-  --from-literal=API_SERVER_KEY="${API_SERVER_KEY}"
-```
-
-#### Variant A — Local Ollama (no extra keys needed)
-
-The Ollama endpoint does not require an API key.  The secret above is
-sufficient.
-
-#### Variant B — Cloud provider
-
-Add the provider key to the same secret:
+All secret values are injected from the `hermes-secrets` Kubernetes Secret via
+`envFrom`. Copy the example file, fill in your values, and apply it:
 
 ```bash
-# OpenAI
-kubectl create secret generic hermes-secrets \
-  --namespace hermes \
-  --from-literal=API_SERVER_KEY="${API_SERVER_KEY}" \
-  --from-literal=OPENAI_API_KEY="sk-..."
-
-# --- OR Gemini ---
-kubectl create secret generic hermes-secrets \
-  --namespace hermes \
-  --from-literal=API_SERVER_KEY="${API_SERVER_KEY}" \
-  --from-literal=GEMINI_API_KEY="AIza..."
+cp applications/hermes/hermes-secrets.example.yaml hermes-secrets.yaml
+# edit hermes-secrets.yaml — do not commit the filled-in copy
+kubectl apply -f hermes-secrets.yaml
 ```
 
-#### Optional — messaging platform tokens
-
-Add any gateway bot tokens to the same secret and uncomment the corresponding
-env vars in `hermes.nix`:
+The minimum required key is `API_SERVER_KEY` (gates the gateway API and
+dashboard). Generate a strong value with:
 
 ```bash
-# Re-create (or patch) the secret with additional keys:
-kubectl create secret generic hermes-secrets \
-  --namespace hermes \
-  --from-literal=API_SERVER_KEY="${API_SERVER_KEY}" \
-  --from-literal=TELEGRAM_BOT_TOKEN="..."
-  # --from-literal=DISCORD_BOT_TOKEN="..."
+openssl rand -hex 32
 ```
 
-### 2. Longhorn storage
-
-This app requires Longhorn (`storageClassName: longhorn`).  Enroll Longhorn in
-`clusters/oci/apps.yaml` first if it is not already active.
+See `hermes-secrets.example.yaml` for the full list of supported keys
+(cloud provider API keys, messaging platform bot tokens, etc.).
 
 ---
 
 ## Provider configuration
 
-The `hermes-config` ConfigMap in `hermes.nix` controls which LLM provider
-Hermes uses.  Two variants are included as comments; switch between them by
-changing the `config.yaml` key in the ConfigMap and the corresponding env var
-in the Deployment.
+The LLM provider is controlled by which YAML file is inlined into the
+`hermes-config` ConfigMap via `builtins.readFile` in `hermes.nix`.
 
-| Variant | `config.yaml` `provider` | Required secret key |
-|---------|--------------------------|---------------------|
-| A — Local Ollama | `custom` → Ollama ClusterIP | *(none)* |
-| B — OpenAI | `openai` | `OPENAI_API_KEY` |
-| B — Gemini | `google` | `GEMINI_API_KEY` |
+| Variant | File | Extra secret key |
+|---|---|---|
+| **A — Local Ollama (default)** | `config-ollama.yaml` | *(none)* |
+| **B — OpenAI** | `config-cloud.yaml` | `OPENAI_API_KEY` |
+| **B — Gemini** | `config-cloud.yaml` | `GEMINI_API_KEY` |
 
-The Ollama model name in the ConfigMap (`llama3.2:3b` by default) must match
-a model that has been pulled in your Ollama deployment.  Check available
-models with:
+To switch, change the one line in `hermes.nix`:
+
+```nix
+# from
+data."config.yaml" = builtins.readFile ./config-ollama.yaml;
+# to
+data."config.yaml" = builtins.readFile ./config-cloud.yaml;
+```
+
+Then open `config-cloud.yaml` and uncomment the provider block you want.
+
+The Ollama model name in `config-ollama.yaml` (`llama3.2:3b` by default) must
+match a model that has been pulled in your Ollama deployment:
 
 ```bash
 kubectl exec -n ollama deploy/ollama -- ollama list
@@ -113,7 +72,7 @@ kubectl exec -n ollama deploy/ollama -- ollama list
 
 ## Enrolling in ArgoCD
 
-Once the ARM64 check passes and secrets are in place, add to
+Once the Secret is in place and the config file is correct, add to
 `clusters/oci/apps.yaml`:
 
 ```yaml
@@ -124,18 +83,16 @@ Once the ARM64 check passes and secrets are in place, add to
 
 ---
 
-## First-run setup
+## First-run behaviour
 
 On the very first start the entrypoint bootstraps `/opt/data` (creates
-directory structure, copies default `SOUL.md`, etc.).  The pod will show
-`READY 0/1` for up to ~60 s while this completes — this is normal.
+directory structure, syncs bundled skills, copies default `SOUL.md`, etc.).
+The pod will show `READY 0/1` for up to ~60 s — this is normal.
 
-If you want to customise the agent personality, edit `SOUL.md` in the PVC
-after the first run:
+To customise the agent personality after the first run:
 
 ```bash
-kubectl exec -n hermes deploy/hermes -- \
-  vi /opt/data/SOUL.md
+kubectl exec -it -n hermes deploy/hermes -- vi /opt/data/SOUL.md
 ```
 
 ---
@@ -147,29 +104,29 @@ kubectl exec -n hermes deploy/hermes -- \
 | CPU | 250 m | 1000 m |
 | Memory | 512 Mi | 1536 Mi |
 | Storage | 5 Gi (Longhorn PVC) | — |
-| `/dev/shm` | — | 1 Gi (Memory-backed) |
+| `/dev/shm` | — | 1 Gi (Memory-backed emptyDir) |
 
-Browser automation (Playwright/Chromium) is the most memory-hungry feature.
-It is **disabled by default** in this deployment.  If you enable it via
-`HERMES_BROWSER=1`, increase the memory limit to at least `3Gi`.
+Browser automation (Playwright/Chromium) is **disabled by default**. If you
+enable it via `HERMES_BROWSER=1`, increase the memory limit to at least `3Gi`
+and the `dshm` emptyDir `sizeLimit` accordingly.
 
-Always Free headroom check before changing limits:
-- Total A1 OCPUs across all instances ≤ 4
-- Total A1 RAM across all instances ≤ 24 GB
-- Total block storage ≤ 200 GB
+OCI Always Free headroom consumed by this app:
+- CPU: +250 m request / +1000 m limit
+- RAM: +512 Mi request / +1536 Mi limit
+- Block storage: +5 Gi
 
 ---
 
 ## Upgrading
 
-Hermes uses a rolling `latest` tag.  To trigger a redeploy with the newest
-image, cycle the pod:
+Hermes uses a rolling `latest` tag. To redeploy with the newest image:
 
 ```bash
 kubectl rollout restart -n hermes deployment/hermes
 ```
 
-Consider pinning to a specific release digest once the app is stable:
+Once the app is stable, consider pinning to a specific digest to prevent
+unexpected upgrades:
 
 ```nix
 image = "nousresearch/hermes-agent@sha256:<digest>";

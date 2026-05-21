@@ -1,20 +1,13 @@
 # Hermes Agent — kubenix deployment
 #
-# Two provider configurations are available via the hermes-config ConfigMap:
+# Provider is controlled by which config YAML file is inlined into the
+# hermes-config ConfigMap.  Switch by changing the builtins.readFile path:
 #
-#   VARIANT A (default): Local Ollama
-#     → points at http://ollama.ollama.svc.cluster.local:11434/v1
-#     → no cloud API key required
+#   Variant A (default) — Local Ollama:  ./config-ollama.yaml
+#   Variant B           — Cloud:         ./config-cloud.yaml
 #
-#   VARIANT B: Cloud provider (OpenAI or Gemini)
-#     → swap the config.yaml block in configMaps."hermes-config" below
-#     → uncomment the API key env vars in the Deployment
-#     → create hermes-secrets with the appropriate key (see README)
-#
-# ⚠️  ARM64 CHECK REQUIRED before deploying:
-#     docker manifest inspect nousresearch/hermes-agent:latest | grep architecture
-#     The OCI nodes are aarch64. If linux/arm64 is absent, the pod will
-#     CrashLoop.  See README for mitigation options.
+# Secrets (API keys, bot tokens) are mounted from the hermes-secrets Secret
+# as environment variables via envFrom.  See hermes-secrets.example.yaml.
 
 { kubenix, ... }:
 {
@@ -29,7 +22,7 @@
       namespaces.hermes = {};
 
       # ── Persistent storage for /opt/data ───────────────────────────────────
-      # Holds sessions/, memories/, skills/, .env, SOUL.md, logs/, etc.
+      # Holds sessions/, memories/, skills/, SOUL.md, logs/, cron/, hooks/.
       # Grows with usage; 5 Gi is comfortable for a personal instance.
       persistentVolumeClaims."hermes-data" = {
         metadata = {
@@ -45,65 +38,22 @@
       };
 
       # ── Provider configuration ─────────────────────────────────────────────
-      # The ConfigMap is mounted over the PVC at /opt/data/config.yaml so that
-      # provider settings are GitOps-managed and not drifted at runtime.
+      # The config YAML is inlined at evaluation time via builtins.readFile so
+      # the Nix expression stays clean and the config is plain YAML.
+      # It is mounted over the PVC at /opt/data/config.yaml (subPath) so that
+      # provider settings are GitOps-managed and cannot drift at runtime.
       #
-      # Hermes reads config.yaml on startup; the entrypoint will NOT overwrite
-      # it because it only copies defaults when the file is absent.
+      # To switch provider, change the path below and update hermes-secrets
+      # to include the matching API key.
       configMaps."hermes-config" = {
         metadata = {
           name = "hermes-config";
           namespace = "hermes";
           labels.app = "hermes";
         };
-        data = {
-          # ── VARIANT A: Local Ollama (default) ──────────────────────────────
-          # Adjust `model` to match whatever is pulled in your Ollama instance,
-          # e.g. llama3.2:3b, mistral:7b, qwen2.5:7b, etc.
-          "config.yaml" = ''
-            model:
-              provider: custom
-              model: llama3.2:3b
-              base_url: http://ollama.ollama.svc.cluster.local:11434/v1
-              api_key: "none"
-            gateway:
-              enabled: true
-            api_server:
-              enabled: true
-              host: "0.0.0.0"
-              port: 8642
-          '';
-
-          # ── VARIANT B: Cloud provider ──────────────────────────────────────
-          # To switch, replace the "config.yaml" block above with one of these
-          # and uncomment the matching env var in the Deployment below.
-          #
-          # OpenAI:
-          # "config.yaml" = ''
-          #   model:
-          #     provider: openai
-          #     model: gpt-4o
-          #   gateway:
-          #     enabled: true
-          #   api_server:
-          #     enabled: true
-          #     host: "0.0.0.0"
-          #     port: 8642
-          # '';
-          #
-          # Gemini:
-          # "config.yaml" = ''
-          #   model:
-          #     provider: google
-          #     model: gemini-2.0-flash
-          #   gateway:
-          #     enabled: true
-          #   api_server:
-          #     enabled: true
-          #     host: "0.0.0.0"
-          #     port: 8642
-          # '';
-        };
+        data."config.yaml" = builtins.readFile ./config-ollama.yaml;
+        # Variant B — cloud provider:
+        # data."config.yaml" = builtins.readFile ./config-cloud.yaml;
       };
 
       # ── Deployment ─────────────────────────────────────────────────────────
@@ -137,97 +87,39 @@
               containers = [
                 {
                   name = "hermes";
-
-                  # ⚠️  Verify ARM64 support before deploying:
-                  #   docker manifest inspect nousresearch/hermes-agent:latest
-                  # If linux/arm64 is absent the pod will CrashLoop on these
-                  # aarch64 nodes.  See README for workarounds.
                   image = "nousresearch/hermes-agent:latest";
                   imagePullPolicy = "IfNotPresent";
 
-                  # Pass args (not command) so the official entrypoint.sh
-                  # runs first; it bootstraps /opt/data and drops to hermes
-                  # user before exec-ing this command.
+                  # Pass args (not command) so the official entrypoint.sh runs
+                  # first: it bootstraps /opt/data and gosu-drops to the hermes
+                  # user before exec-ing the gateway.
                   args = [ "gateway" "run" ];
 
                   ports = [
-                    {
-                      name = "gateway";
-                      containerPort = 8642;
-                      protocol = "TCP";
-                    }
-                    {
-                      name = "dashboard";
-                      containerPort = 9119;
-                      protocol = "TCP";
-                    }
+                    { name = "gateway";   containerPort = 8642; protocol = "TCP"; }
+                    { name = "dashboard"; containerPort = 9119; protocol = "TCP"; }
                   ];
 
+                  # Static, non-secret configuration committed in plain text.
                   env = [
-                    # Run the web dashboard as a side-process within the container.
                     { name = "HERMES_DASHBOARD";      value = "1"; }
                     { name = "HERMES_DASHBOARD_HOST"; value = "0.0.0.0"; }
                     { name = "HERMES_DASHBOARD_PORT"; value = "9119"; }
+                    { name = "HERMES_UID";            value = "10000"; }
+                    { name = "HERMES_GID";            value = "10000"; }
+                    { name = "API_SERVER_ENABLED";    value = "true"; }
+                    { name = "API_SERVER_HOST";       value = "0.0.0.0"; }
+                  ];
 
-                    # Tell the entrypoint which UID to gosu into.
-                    { name = "HERMES_UID"; value = "10000"; }
-                    { name = "HERMES_GID"; value = "10000"; }
-
-                    # Expose the OpenAI-compatible API server on port 8642.
-                    { name = "API_SERVER_ENABLED"; value = "true"; }
-                    { name = "API_SERVER_HOST";    value = "0.0.0.0"; }
-
-                    # Required when API_SERVER_ENABLED=true (min 8 chars).
-                    # Create the secret: see README → Prerequisites → Secrets.
-                    {
-                      name = "API_SERVER_KEY";
-                      valueFrom.secretKeyRef = {
-                        name = "hermes-secrets";
-                        key  = "API_SERVER_KEY";
-                      };
-                    }
-
-                    # ── VARIANT B: Cloud provider keys ─────────────────────
-                    # Uncomment ONE of these when using a cloud provider.
-                    # Also update configMaps."hermes-config" above.
-                    #
-                    # OpenAI:
-                    # {
-                    #   name = "OPENAI_API_KEY";
-                    #   valueFrom.secretKeyRef = {
-                    #     name = "hermes-secrets";
-                    #     key  = "OPENAI_API_KEY";
-                    #   };
-                    # }
-                    #
-                    # Gemini / Google AI:
-                    # {
-                    #   name = "GEMINI_API_KEY";
-                    #   valueFrom.secretKeyRef = {
-                    #     name = "hermes-secrets";
-                    #     key  = "GEMINI_API_KEY";
-                    #   };
-                    # }
-
-                    # ── Optional: messaging platform tokens ────────────────
-                    # {
-                    #   name = "TELEGRAM_BOT_TOKEN";
-                    #   valueFrom.secretKeyRef = {
-                    #     name = "hermes-secrets";
-                    #     key  = "TELEGRAM_BOT_TOKEN";
-                    #   };
-                    # }
-                    # {
-                    #   name = "DISCORD_BOT_TOKEN";
-                    #   valueFrom.secretKeyRef = {
-                    #     name = "hermes-secrets";
-                    #     key  = "DISCORD_BOT_TOKEN";
-                    #   };
-                    # }
+                  # All secret values (API keys, bot tokens, etc.) are injected
+                  # from the hermes-secrets Secret.  See hermes-secrets.example.yaml
+                  # for the full list of supported keys.
+                  envFrom = [
+                    { secretRef.name = "hermes-secrets"; }
                   ];
 
                   # Gateway has a slow startup on first run (bootstraps /opt/data,
-                  # may pull model metadata, etc.). Give it 5 minutes.
+                  # syncs bundled skills).  Give it up to 5 minutes.
                   startupProbe = {
                     tcpSocket.port = "gateway";
                     periodSeconds    = 10;
@@ -248,10 +140,8 @@
                   };
 
                   # Sized for Hermes without browser tools (Playwright/Chromium
-                  # disabled).  Bump memory limit to 3-4 Gi if you enable
-                  # HERMES_BROWSER=1 for web browsing tasks.
-                  # OCI Always Free headroom: ~2 OCPU / 12 Gi remaining across
-                  # both nodes after existing workloads.
+                  # disabled).  Bump memory limit to 3–4 Gi and the /dev/shm
+                  # emptyDir sizeLimit if you enable HERMES_BROWSER=1.
                   resources = {
                     requests = {
                       cpu    = "250m";
@@ -265,23 +155,22 @@
 
                   volumeMounts = [
                     {
-                      # Primary data volume: sessions, memories, skills, .env
+                      # Primary data volume: sessions, memories, skills, SOUL.md.
                       name      = "hermes-data";
                       mountPath = "/opt/data";
                     }
                     {
                       # GitOps-managed provider config overlaid on the PVC.
-                      # Uses subPath so only config.yaml is replaced; the rest
-                      # of /opt/data continues to use the PVC.
+                      # subPath ensures only config.yaml is replaced; all other
+                      # /opt/data paths continue to read from the PVC.
                       name      = "hermes-config";
                       mountPath = "/opt/data/config.yaml";
                       subPath   = "config.yaml";
                       readOnly  = true;
                     }
                     {
-                      # Playwright/Chromium needs /dev/shm for shared memory.
-                      # This is a no-op when browser tools are disabled but
-                      # harmless to keep in place.
+                      # Shared memory for Playwright/Chromium.  Harmless when
+                      # browser tools are not in use.
                       name      = "dshm";
                       mountPath = "/dev/shm";
                     }
@@ -299,13 +188,13 @@
                   persistentVolumeClaim.claimName = "hermes-data";
                 }
                 {
-                  name      = "hermes-config";
+                  name           = "hermes-config";
                   configMap.name = "hermes-config";
                 }
                 {
-                  # 1 Gi shared memory for Playwright — safe to reduce to
-                  # 256Mi if you never enable browser tools.
-                  name    = "dshm";
+                  # 1 Gi shared memory for Playwright.  Safe to reduce to 256Mi
+                  # if browser tools will never be enabled.
+                  name     = "dshm";
                   emptyDir = {
                     medium    = "Memory";
                     sizeLimit = "1Gi";
@@ -321,7 +210,7 @@
         };
       };
 
-      # ── Services ───────────────────────────────────────────────────────────
+      # ── Services ─────────────────────────────────────────────────────────
       services.hermes = {
         metadata = {
           name      = "hermes";
@@ -329,28 +218,18 @@
           labels.app = "hermes";
         };
         spec = {
-          type     = "ClusterIP";
+          type         = "ClusterIP";
           selector.app = "hermes";
           ports = [
-            {
-              name       = "gateway";
-              port       = 8642;
-              targetPort = "gateway";
-              protocol   = "TCP";
-            }
-            {
-              name       = "dashboard";
-              port       = 9119;
-              targetPort = "dashboard";
-              protocol   = "TCP";
-            }
+            { name = "gateway";   port = 8642; targetPort = "gateway";   protocol = "TCP"; }
+            { name = "dashboard"; port = 9119; targetPort = "dashboard"; protocol = "TCP"; }
           ];
         };
       };
 
-      # ── Ingress (dashboard) ────────────────────────────────────────────────
+      # ── Ingress (dashboard) ───────────────────────────────────────────────
       # Exposes the Hermes web dashboard via Traefik + Cloudflare + cert-manager.
-      # Update the hostname to match your domain before enrolling.
+      # Update the hostname to match your domain before enrolling in apps.yaml.
       ingresses."hermes-ingress" = {
         metadata = {
           name      = "hermes-ingress";

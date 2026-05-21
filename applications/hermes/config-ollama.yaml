@@ -1,0 +1,19 @@
+# Hermes Agent — provider configuration: Local Ollama
+#
+# Referenced from hermes.nix via:
+#   data."config.yaml" = builtins.readFile ./config-ollama.yaml;
+#
+# Adjust `model` to match whatever is currently pulled in your Ollama
+# deployment (check with: kubectl exec -n ollama deploy/ollama -- ollama list).
+
+model:
+  provider: custom
+  model: llama3.2:3b
+  base_url: http://ollama.ollama.svc.cluster.local:11434/v1
+  api_key: "none"
+gateway:
+  enabled: true
+api_server:
+  enabled: true
+  host: "0.0.0.0"
+  port: 8642

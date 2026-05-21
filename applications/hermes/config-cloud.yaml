@@ -1,0 +1,26 @@
+# Hermes Agent — provider configuration: Cloud provider
+#
+# Referenced from hermes.nix via:
+#   data."config.yaml" = builtins.readFile ./config-cloud.yaml;
+#
+# Uncomment the provider block you want and set the matching API key in
+# hermes-secrets.yaml (see hermes-secrets.example.yaml).
+
+model:
+  # ── OpenAI ──────────────────────────────────────────────────────────────────
+  # Requires OPENAI_API_KEY in hermes-secrets.
+  provider: openai
+  model: gpt-4o
+
+  # ── Gemini / Google AI ──────────────────────────────────────────────────────
+  # Uncomment and comment-out the OpenAI block above.
+  # Requires GEMINI_API_KEY in hermes-secrets.
+  # provider: google
+  # model: gemini-2.0-flash
+
+gateway:
+  enabled: true
+api_server:
+  enabled: true
+  host: "0.0.0.0"
+  port: 8642
