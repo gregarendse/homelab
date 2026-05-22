@@ -24,8 +24,6 @@ spec:
   source:
     repoURL: https://github.com/gregarendse/homelab.git
     targetRevision: master
-    path: server
-    helm:
-      releaseName: recyclarr
-      valueFiles:
-        - ../applications/recyclarr/values.yaml
+    path: clusters/trinity/rendered/recyclarr
+    directory:
+      recurse: true

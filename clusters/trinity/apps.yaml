@@ -46,14 +46,9 @@ apps:
       valueFiles:
         - applications/prowlarr/values.yaml
   - name: recyclarr
-    type: helm
+    type: rendered
     namespace: recyclarr
-    helm:
-      kind: path
-      path: server
-      releaseName: recyclarr
-      valueFiles:
-        - applications/recyclarr/values.yaml
+    path: applications/recyclarr
 
   - name: radarr
     type: helm

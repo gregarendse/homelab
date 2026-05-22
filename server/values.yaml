@@ -8,10 +8,6 @@ image:
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
 
-# Optional container command/args override
-# command: []
-# args: []
-
 keel:
   # Update policy (available: patch, minor, major, all, force). Force update even if tag is not semver, ie: latest
   policy: force
