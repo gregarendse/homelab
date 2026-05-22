@@ -51,9 +51,9 @@
           namespace = "hermes";
           labels.app = "hermes";
         };
-        data."config.yaml" = builtins.readFile ./config-ollama.yaml;
+#        data."config.yaml" = builtins.readFile ./config-ollama.yaml;
         # Variant B — cloud provider:
-        # data."config.yaml" = builtins.readFile ./config-cloud.yaml;
+         data."config.yaml" = builtins.readFile ./config-cloud.yaml;
       };
 
       # ── Deployment ─────────────────────────────────────────────────────────
@@ -88,7 +88,7 @@
                 {
                   name = "hermes";
                   image = "nousresearch/hermes-agent:latest";
-                  imagePullPolicy = "IfNotPresent";
+                  imagePullPolicy = "Always";
 
                   # Pass args (not command) so the official entrypoint.sh runs
                   # first: it bootstraps /opt/data and gosu-drops to the hermes
@@ -102,9 +102,10 @@
 
                   # Static, non-secret configuration committed in plain text.
                   env = [
-                    { name = "HERMES_DASHBOARD";      value = "1"; }
-                    { name = "HERMES_DASHBOARD_HOST"; value = "0.0.0.0"; }
-                    { name = "HERMES_DASHBOARD_PORT"; value = "9119"; }
+#                  The dashboard has no auth on it, so its not safe to expose publicly. ToDo: Can we expose this safely?
+#                    { name = "HERMES_DASHBOARD";      value = "1"; }
+#                    { name = "HERMES_DASHBOARD_HOST"; value = "0.0.0.0"; }
+#                    { name = "HERMES_DASHBOARD_PORT"; value = "9119"; }
                     { name = "HERMES_UID";            value = "10000"; }
                     { name = "HERMES_GID";            value = "10000"; }
                     { name = "API_SERVER_ENABLED";    value = "true"; }
@@ -149,7 +150,7 @@
                     };
                     limits = {
                       cpu    = "1000m";
-                      memory = "1536Mi";
+                      memory = "2048Mi";
                     };
                   };
 
@@ -246,7 +247,6 @@
           ingressClassName = "traefik";
           tls = [
             {
-              # TODO: update to your domain
               hosts      = [ "hermes.arendse.nom.za" ];
               secretName = "hermes-tls";
             }
