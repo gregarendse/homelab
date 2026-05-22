@@ -9,14 +9,19 @@
 model:
   # ── OpenAI ──────────────────────────────────────────────────────────────────
   # Requires OPENAI_API_KEY in hermes-secrets.
-  provider: openai
-  model: gpt-4o
+  #  provider: openai
+  #  model: gpt-4o
 
   # ── Gemini / Google AI ──────────────────────────────────────────────────────
   # Uncomment and comment-out the OpenAI block above.
   # Requires GEMINI_API_KEY in hermes-secrets.
-  # provider: google
-  # model: gemini-2.0-flash
+  provider: google
+  model: gemini-flash-latest
+fallback_providers:
+  - provider: google
+    model: gemini-flash-lite-latest
+  - provider: openai
+    model: gpt-5.4-mini
 
 gateway:
   enabled: true
