@@ -110,6 +110,7 @@
                     { name = "HERMES_GID";            value = "10000"; }
                     { name = "API_SERVER_ENABLED";    value = "true"; }
                     { name = "API_SERVER_HOST";       value = "0.0.0.0"; }
+                    { name = "HASS_URL";              value = "http://home-assistant.home-assistant:8123"; }
                   ];
 
                   # All secret values (API keys, bot tokens, etc.) are injected
