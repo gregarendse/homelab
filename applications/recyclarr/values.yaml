@@ -1,0 +1,31 @@
+image:
+  repository: ghcr.io/recyclarr/recyclarr
+  tag: latest
+  pullPolicy: Always
+
+# Run TRaSH Guide sync on a schedule.
+command:
+  - /bin/sh
+  - -c
+args:
+  - |
+    while true; do
+      echo "[$(date -Iseconds)] Starting Recyclarr sync";
+      recyclarr sync --app-data /config --config-file /config/recyclarr.yml;
+      echo "[$(date -Iseconds)] Recyclarr sync complete; sleeping 6h";
+      sleep 21600;
+    done
+
+volumes:
+  config:
+    source: "/mnt/data/recyclarr/config"
+    dest: "/config"
+
+environment:
+  - name: TZ
+    value: Africa/Johannaesburg
+
+# Place RADARR_API_KEY and SONARR_API_KEY in this secret.
+secrets:
+  environment:
+    - recyclarr-api-keys

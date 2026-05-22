@@ -1,0 +1,45 @@
+# TRaSH Guide Sync configuration for Recyclarr
+# Docs: https://trash-guides.info/Guide-Sync/
+
+radarr:
+  movies:
+    base_url: http://radarr.radarr.svc.cluster.local:7878
+    api_key: !env_var RADARR_API_KEY
+
+    quality_definition:
+      type: movie
+
+    quality_profiles:
+      - name: HD Bluray + WEB
+        reset_unmatched_scores:
+          enabled: true
+        min_format_score: 0
+        quality_sort: top
+        format_items:
+          - trash_ids:
+              - ed27ebfef2f323e964fb1f61391bcb35
+              - c20c8647f2746a1f4c4262b0fbbeeeae
+              - 5608c71bcebba0a5e666223bae8c9227
+            assign_scores_to:
+              - name: HD Bluray + WEB
+
+sonarr:
+  series:
+    base_url: http://sonarr.sonarr.svc.cluster.local:8989
+    api_key: !env_var SONARR_API_KEY
+
+    quality_definition:
+      type: series
+
+    quality_profiles:
+      - name: WEB-1080p
+        reset_unmatched_scores:
+          enabled: true
+        min_format_score: 0
+        quality_sort: top
+        format_items:
+          - trash_ids:
+              - 47435ece6b99a0b477caf360e79ba0bb
+              - 9b64dff695c2115facf1b6ea59c9bd07
+            assign_scores_to:
+              - name: WEB-1080p
