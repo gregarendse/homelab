@@ -94,11 +94,12 @@ apps:
     type: rendered
     path: applications/unifi
 
-  - name: ollama
-    type: rendered
-    path: applications/ollama
-
-  - name: open-webui
-    type: rendered
-    path: applications/open-webui
+# Disabling, going to use cloud providers, might come back to this at a later point
+#  - name: ollama
+#    type: rendered
+#    path: applications/ollama
+#
+#  - name: open-webui
+#    type: rendered
+#    path: applications/open-webui
 
