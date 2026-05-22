@@ -231,44 +231,44 @@
       # ── Ingress (dashboard) ───────────────────────────────────────────────
       # Exposes the Hermes web dashboard via Traefik + Cloudflare + cert-manager.
       # Update the hostname to match your domain before enrolling in apps.yaml.
-      ingresses."hermes-ingress" = {
-        metadata = {
-          name      = "hermes-ingress";
-          namespace = "hermes";
-          annotations = {
-            "external-dns.alpha.kubernetes.io/cloudflare-proxied" = "true";
-            "external-dns.alpha.kubernetes.io/cloudflare-tags"    = "app=hermes,env=prod,owner=homelab";
-            "cert-manager.io/cluster-issuer"                      = "letsencrypt-prod";
-            "traefik.ingress.kubernetes.io/router.entrypoints"    = "websecure";
-            "traefik.ingress.kubernetes.io/router.tls"            = "true";
-          };
-        };
-        spec = {
-          ingressClassName = "traefik";
-          tls = [
-            {
-              hosts      = [ "hermes.arendse.nom.za" ];
-              secretName = "hermes-tls";
-            }
-          ];
-          rules = [
-            {
-              host = "hermes.arendse.nom.za";
-              http.paths = [
-                {
-                  path     = "/";
-                  pathType = "Prefix";
-                  backend.service = {
-                    name = "hermes";
-                    # Route to the dashboard port (9119), not the gateway API.
-                    port.number = 9119;
-                  };
-                }
-              ];
-            }
-          ];
-        };
-      };
+#      ingresses."hermes-ingress" = {
+#        metadata = {
+#          name      = "hermes-ingress";
+#          namespace = "hermes";
+#          annotations = {
+#            "external-dns.alpha.kubernetes.io/cloudflare-proxied" = "true";
+#            "external-dns.alpha.kubernetes.io/cloudflare-tags"    = "app=hermes,env=prod,owner=homelab";
+#            "cert-manager.io/cluster-issuer"                      = "letsencrypt-prod";
+#            "traefik.ingress.kubernetes.io/router.entrypoints"    = "websecure";
+#            "traefik.ingress.kubernetes.io/router.tls"            = "true";
+#          };
+#        };
+#        spec = {
+#          ingressClassName = "traefik";
+#          tls = [
+#            {
+#              hosts      = [ "hermes.arendse.nom.za" ];
+#              secretName = "hermes-tls";
+#            }
+#          ];
+#          rules = [
+#            {
+#              host = "hermes.arendse.nom.za";
+#              http.paths = [
+#                {
+#                  path     = "/";
+#                  pathType = "Prefix";
+#                  backend.service = {
+#                    name = "hermes";
+#                    # Route to the dashboard port (9119), not the gateway API.
+#                    port.number = 9119;
+#                  };
+#                }
+#              ];
+#            }
+#          ];
+#        };
+#      };
 
     };
   };
