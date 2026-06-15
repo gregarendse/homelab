@@ -31,19 +31,8 @@
         };
       };
 
-      # Secret for Pi-hole admin password
-      secrets.pihole-secret = {
-        metadata = {
-          name = "pihole-secret";
-          namespace = "pihole";
-        };
-        type = "Opaque";
-        stringData = {
-          password = "admin123"; # Change this to your desired password
-        };
-      };
-
       # PersistentVolumeClaim for Pi-hole data
+      # NOTE: Secret "pihole-secret" with key "password" must be created manually in the "pihole" namespace.
       persistentVolumeClaims.pihole-data = {
         metadata = {
           name = "pihole-data";
@@ -117,6 +106,13 @@
                   {
                     name = "TZ";
                     value = "Europe/London";
+                  }
+                  {
+                    name = "WEBPASSWORD";
+                    valueFrom.secretKeyRef = {
+                      name = "pihole-secret";
+                      key = "password";
+                    };
                   }
                 ];
                 volumeMounts = [
