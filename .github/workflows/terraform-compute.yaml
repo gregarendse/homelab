@@ -1,0 +1,206 @@
+# Terraform CI/CD for infrastructure/compute
+#
+# - Pull requests touching infrastructure/compute run `terraform plan` and post
+#   the plan back as a PR comment (read-only, safe to run on untrusted changes).
+# - Merges to master run `terraform apply`, gated behind the `production`
+#   GitHub Environment so an apply only proceeds after manual approval.
+#
+# Running on Linux runners also sidesteps the darwin_arm64 provider problem that
+# blocked local plans.
+#
+# ---------------------------------------------------------------------------
+# Required configuration in the `production` GitHub Environment
+# (Settings -> Environments -> production):
+#
+#   Required reviewers: add yourself so apply pauses for approval.
+#
+#   Secrets:
+#     AWS_ACCESS_KEY_ID       Backblaze B2 keyID (used by the S3 state backend)
+#     AWS_SECRET_ACCESS_KEY   Backblaze B2 applicationKey
+#     OCI_TENANCY_OCID        ocid1.tenancy.oc1...
+#     OCI_USER_OCID           ocid1.user.oc1...
+#     OCI_FINGERPRINT         API key fingerprint (xx:xx:..:xx)
+#     OCI_PRIVATE_KEY         Full PEM contents of the OCI API private key
+#     TAILSCALE_API_KEY       Tailscale auth key
+#
+#   Variables:
+#     OCI_REGION              e.g. uk-london-1 (optional; defaults below)
+#     TAILSCALE_TAILNET       Tailscale tailnet name
+#     SSH_PUBLIC_KEY          Public SSH key written to instances
+# ---------------------------------------------------------------------------
+
+name: terraform-compute
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - "infrastructure/compute/**"
+      - ".github/workflows/terraform-compute.yaml"
+  push:
+    branches: [master]
+    paths:
+      - "infrastructure/compute/**"
+      - ".github/workflows/terraform-compute.yaml"
+
+permissions:
+  contents: read
+  pull-requests: write # post the plan as a PR comment
+
+env:
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+  TF_WORKSPACE_DIR: infrastructure/compute
+  TF_VERSION: "1.14.9" # match the version recorded in remote state
+  # Non-secret backend settings (creds come from AWS_* env below).
+  BACKEND_ENDPOINT: "https://s3.eu-central-003.backblazeb2.com"
+  BACKEND_REGION: "eu-central-003"
+
+jobs:
+  plan:
+    name: plan
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: terraform-compute-${{ github.head_ref }}
+      cancel-in-progress: true
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      TF_VAR_tenancy_ocid: ${{ secrets.OCI_TENANCY_OCID }}
+      TF_VAR_user_ocid: ${{ secrets.OCI_USER_OCID }}
+      TF_VAR_fingerprint: ${{ secrets.OCI_FINGERPRINT }}
+      TF_VAR_tailscale_api_key: ${{ secrets.TAILSCALE_API_KEY }}
+      TF_VAR_region: ${{ vars.OCI_REGION || 'uk-london-1' }}
+      TF_VAR_tailscale_tailnet: ${{ vars.TAILSCALE_TAILNET }}
+      TF_VAR_private_key_path: ${{ github.workspace }}/oci_api_key.pem
+      TF_VAR_public_key_path: ${{ github.workspace }}/id_ssh.pub
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write credential files
+        run: |
+          umask 077
+          printf '%s' "${{ secrets.OCI_PRIVATE_KEY }}" > "${{ github.workspace }}/oci_api_key.pem"
+          printf '%s' "${{ vars.SSH_PUBLIC_KEY }}" > "${{ github.workspace }}/id_ssh.pub"
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform fmt
+        id: fmt
+        working-directory: ${{ env.TF_WORKSPACE_DIR }}
+        run: terraform fmt -check -recursive
+        continue-on-error: true
+
+      - name: Terraform init
+        working-directory: ${{ env.TF_WORKSPACE_DIR }}
+        run: |
+          terraform init -input=false \
+            -backend-config="endpoint=${BACKEND_ENDPOINT}" \
+            -backend-config="region=${BACKEND_REGION}"
+
+      - name: Terraform validate
+        working-directory: ${{ env.TF_WORKSPACE_DIR }}
+        run: terraform validate -no-color
+
+      - name: Terraform plan
+        id: plan
+        working-directory: ${{ env.TF_WORKSPACE_DIR }}
+        run: terraform plan -input=false -no-color -lock-timeout=120s
+        continue-on-error: true
+
+      - name: Comment plan on PR
+        uses: actions/github-script@v7
+        env:
+          FMT_OUTCOME: ${{ steps.fmt.outcome }}
+          PLAN_OUTCOME: ${{ steps.plan.outcome }}
+          PLAN_STDOUT: ${{ steps.plan.outputs.stdout }}
+          PLAN_STDERR: ${{ steps.plan.outputs.stderr }}
+        with:
+          script: |
+            const fmt = process.env.FMT_OUTCOME;
+            const plan = process.env.PLAN_OUTCOME;
+            const out = [process.env.PLAN_STDOUT, process.env.PLAN_STDERR]
+              .filter(Boolean).join('\n').trim() || '(no output)';
+            const body = [
+              '### Terraform plan — `infrastructure/compute`',
+              '',
+              `* fmt: \`${fmt}\``,
+              `* plan: \`${plan}\``,
+              '',
+              '<details><summary>Show plan</summary>',
+              '',
+              '```hcl',
+              out.length > 60000 ? out.slice(0, 60000) + '\n... (truncated)' : out,
+              '```',
+              '',
+              '</details>',
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const marker = 'Terraform plan — `infrastructure/compute`';
+            const existing = comments.find(c => c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                comment_id: existing.id, body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: context.issue.number, body,
+              });
+            }
+
+      - name: Fail if plan errored
+        if: steps.plan.outcome == 'failure'
+        run: exit 1
+
+  apply:
+    name: apply
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production # protection rules (required reviewers) gate the apply
+    concurrency:
+      group: terraform-compute-apply # serialize applies — state backend has no lock table
+      cancel-in-progress: false
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      TF_VAR_tenancy_ocid: ${{ secrets.OCI_TENANCY_OCID }}
+      TF_VAR_user_ocid: ${{ secrets.OCI_USER_OCID }}
+      TF_VAR_fingerprint: ${{ secrets.OCI_FINGERPRINT }}
+      TF_VAR_tailscale_api_key: ${{ secrets.TAILSCALE_API_KEY }}
+      TF_VAR_region: ${{ vars.OCI_REGION || 'uk-london-1' }}
+      TF_VAR_tailscale_tailnet: ${{ vars.TAILSCALE_TAILNET }}
+      TF_VAR_private_key_path: ${{ github.workspace }}/oci_api_key.pem
+      TF_VAR_public_key_path: ${{ github.workspace }}/id_ssh.pub
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write credential files
+        run: |
+          umask 077
+          printf '%s' "${{ secrets.OCI_PRIVATE_KEY }}" > "${{ github.workspace }}/oci_api_key.pem"
+          printf '%s' "${{ vars.SSH_PUBLIC_KEY }}" > "${{ github.workspace }}/id_ssh.pub"
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform init
+        working-directory: ${{ env.TF_WORKSPACE_DIR }}
+        run: |
+          terraform init -input=false \
+            -backend-config="endpoint=${BACKEND_ENDPOINT}" \
+            -backend-config="region=${BACKEND_REGION}"
+
+      - name: Terraform apply
+        working-directory: ${{ env.TF_WORKSPACE_DIR }}
+        run: terraform apply -input=false -auto-approve -no-color -lock-timeout=120s
