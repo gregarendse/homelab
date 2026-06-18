@@ -34,8 +34,49 @@ variable "ingress_public_ip" {
 
 variable "cert_manager_email" {
   description = ""
-  type = string
-  nullable = false
+  type        = string
+  nullable    = false
 
 
+}
+
+variable "longhorn_backup_bucket" {
+  description = "Backblaze B2 (S3) bucket that stores Longhorn backups"
+  type        = string
+  default     = "gregarendse-longhorn-backups"
+  nullable    = false
+}
+
+variable "longhorn_backup_region" {
+  description = "Backblaze B2 region of the backup bucket"
+  type        = string
+  default     = "eu-central-003"
+  nullable    = false
+}
+
+variable "longhorn_backup_endpoint" {
+  description = "Backblaze B2 S3-compatible endpoint"
+  type        = string
+  default     = "https://s3.eu-central-003.backblazeb2.com"
+  nullable    = false
+}
+
+variable "longhorn_backup_access_key" {
+  description = "Backblaze B2 application keyID scoped to the Longhorn backup bucket"
+  type        = string
+  sensitive   = true
+  nullable    = false
+}
+
+variable "longhorn_backup_secret_key" {
+  description = "Backblaze B2 application key scoped to the Longhorn backup bucket"
+  type        = string
+  sensitive   = true
+  nullable    = false
+}
+
+variable "longhorn_backup_retain" {
+  description = "Number of recurring backups to retain per volume"
+  type        = number
+  default     = 7
 }
