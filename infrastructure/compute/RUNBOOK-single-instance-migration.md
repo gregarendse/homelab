@@ -12,10 +12,13 @@ neither happens.
   (`scripts/k3s.sh:196` `--cluster`, `scripts/k3s.sh:210` `--server`). A 2-member
   etcd needs both members for quorum, so removing one stops the API server until
   etcd is reset.
-- **Longhorn uses a single replica** (`infrastructure/kubernetes/longhorn.tf:15`,
-  `defaultReplicaCount = "1"`). Each volume lives on exactly one node; if that node
-  is terminated, the data is gone. Affected apps: pihole, home-assistant, hermes,
-  mongo. UniFi uses OCI block storage (`storageClassName = "oci"`) and is safe.
+- **Longhorn data is node-local.** Existing volumes currently run multi-replica
+  (3 desired, 2 healthy — one per node — on this 2-node cluster), so a copy already
+  exists on each node. The risk is only realised if the survivor ends up *without* a
+  healthy replica, so Phase 1 verifies replica placement before any node is removed.
+  (`infrastructure/kubernetes/longhorn.tf:15` sets `defaultReplicaCount = "1"` for
+  *new* volumes only.) Affected apps: pihole, home-assistant, hermes, mongo. UniFi
+  uses OCI block storage (`storageClassName = "oci"`) and is safe regardless.
 - **An instance-pool scale-in terminates an arbitrary instance with no draining.**
   We therefore remove a *specific*, already-drained node manually rather than
   letting Terraform pick.
@@ -40,18 +43,31 @@ neither happens.
 
 Two independent safety nets. Do at least #1; #2 is strongly recommended.
 
-### 1. Replicate every Longhorn volume onto both nodes
+### 1. Confirm every volume has a healthy replica on the survivor
 
-So the survivor holds a full copy of all data before the other node leaves.
+Volumes are already multi-replica (Longhorn's built-in default is 3; on a 2-node
+cluster they sit "degraded" at 2/3 — two healthy replicas, one per node, and a
+third that can never schedule). So the data is already on both nodes; you do **not**
+need to raise replica counts. You just have to prove the survivor (`KEEP_NODE`)
+holds a healthy replica of **every** volume before removing the other node.
 
-1. Open the Longhorn UI (`kubectl -n longhorn-system port-forward svc/longhorn-frontend 8080:80`, then http://localhost:8080).
-2. **Volume → select all → Update Replica Count → `2`.**
-3. Wait until **every volume shows 2 healthy replicas** and is `Healthy` (one replica per node). Do not proceed until this is true.
-
+1. List each replica and the node it lives on — confirm a `running` replica on
+   `KEEP_NODE` for every volume (and that the two healthy replicas are on
+   *different* nodes, not both on `DRAIN_NODE`):
+   ```bash
+   kubectl -n longhorn-system get replicas.longhorn.io \
+     -o custom-columns=VOLUME:.spec.volumeName,NODE:.spec.nodeID,STATE:.status.currentState \
+     | sort
+   ```
+2. Cross-check volume health:
    ```bash
    kubectl -n longhorn-system get volumes.longhorn.io \
      -o custom-columns=NAME:.metadata.name,STATE:.status.state,ROBUSTNESS:.status.robustness,REPLICAS:.spec.numberOfReplicas
    ```
+   Do not proceed until every volume has a `running` replica on `KEEP_NODE`. If any
+   volume's only healthy replica is on `DRAIN_NODE`, pick the other node as the
+   survivor, or rebuild a replica onto `KEEP_NODE` first (Longhorn UI → that volume
+   → the replica → ensure a healthy copy lands on `KEEP_NODE`).
 
 ### 2. Off-cluster backup (recommended)
 
@@ -151,10 +167,11 @@ If the plan shows the instance pool trying to **destroy/recreate** an instance,
 
 ## Phase 6 — Reset Longhorn to single replica
 
-One node can only host one replica, so return to the default:
+A single node can only host one replica per volume, so existing volumes (currently
+3 desired → would be permanently degraded at 1/3) should be lowered to 1:
 
 1. Longhorn UI → **Volume → select all → Update Replica Count → `1`** (clears the
-   now-unschedulable second replicas).
+   now-unschedulable extra replicas and the "degraded" state).
 2. Keep `infrastructure/kubernetes/longhorn.tf` at `defaultReplicaCount = "1"`
    (already correct) for new volumes.
 
