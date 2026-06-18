@@ -11,8 +11,8 @@ resource "oci_core_instance_configuration" "ubuntu" {
       shape          = var.shape
 
       shape_config {
-        ocpus         = 4 / var.instance_count
-        memory_in_gbs = 24 / var.instance_count
+        ocpus         = local.free_tier.ocpus / var.instance_count
+        memory_in_gbs = local.free_tier.memory_gb / var.instance_count
       }
 
       create_vnic_details {
@@ -21,9 +21,12 @@ resource "oci_core_instance_configuration" "ubuntu" {
       }
 
       source_details {
-        source_type             = "image"
-        image_id                = data.oci_core_images.images.images[0].id
-        boot_volume_size_in_gbs = 200 / var.instance_count
+        source_type = "image"
+        image_id    = data.oci_core_images.images.images[0].id
+        # Free tier allows up to local.free_tier.storage_gb (200 GB) total, but
+        # the running instance was provisioned with 100 GB. Keep it at 100 to
+        # avoid diverging from the live boot volume; resize in place to grow it.
+        boot_volume_size_in_gbs = 100
       }
 
       metadata = {

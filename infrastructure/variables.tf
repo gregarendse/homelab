@@ -83,7 +83,7 @@ variable "shape" {
 
 variable "instance_count" {
   type    = number
-  default = 2
+  default = 1
 }
 
 #   Populated by environment variable TF_VAR_tailscale_api_key
