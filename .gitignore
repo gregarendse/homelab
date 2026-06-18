@@ -5,6 +5,8 @@
 !.vscode/extensions.json
 *.code-workspace
 
+.idea/*
+
 #   API keys
 *key*.yaml
 
@@ -12,7 +14,7 @@
 *.tar.gz
 
 #   Hidden files
-.*
+./.*
 
 secret.yml
 secret.yaml
@@ -21,8 +23,12 @@ result.json
 
 # Terraform files
 .terraform/
-.terraform.lock.hcl
+!.terraform.lock.hcl
 *.tfstate
 *.tfstate.backup
+# Terraform secrets — never commit backend creds, var files, or keys
+*.tfbackend
+*.tfvars
+*.pem
 
 !clusters/*/rendered/*/result.json
