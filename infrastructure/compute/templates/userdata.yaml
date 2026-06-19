@@ -2,7 +2,6 @@
 # The above header must generally appear on the first line of a cloud config
 # file, but all other lines that begin with a # are optional comments.
 
-
 packages:
   - apt-transport-https
   - jq
@@ -11,7 +10,50 @@ packages:
   - unattended-upgrades
   - update-notifier-common
 
+write_files:
+  # Prevent apt from hanging indefinitely on stalled mirror connections.
+  # Without this, apt's HTTP methods block forever on a dead socket, which
+  # is what caused the 20-day stuck apt-get process on May 30.
+  - path: /etc/apt/apt.conf.d/99-timeout
+    owner: root:root
+    permissions: '0644'
+    content: |
+      Acquire::http::Timeout "30";
+      Acquire::https::Timeout "30";
+      Acquire::Retries "3";
+
+  # Raise inotify watch limits. On K8s nodes, kubelet and containerd exhaust
+  # the default 8192 watches, causing apt to fail with "Too many open files".
+  # 524288 is the standard k8s node recommendation (~30 MB overhead at max).
+  - path: /etc/sysctl.d/99-inotify.conf
+    owner: root:root
+    permissions: '0644'
+    content: |
+      fs.inotify.max_user_watches=524288
+      fs.inotify.max_user_instances=512
+
+  # Kill apt-daily if it hangs, rather than blocking all manual apt calls.
+  - path: /etc/systemd/system/apt-daily.service.d/override.conf
+    owner: root:root
+    permissions: '0644'
+    content: |
+      [Service]
+      TimeoutStartSec=15min
+      TimeoutStopSec=60
+
+  - path: /etc/systemd/system/apt-daily-upgrade.service.d/override.conf
+    owner: root:root
+    permissions: '0644'
+    content: |
+      [Service]
+      TimeoutStartSec=30min
+      TimeoutStopSec=60
+
 runcmd:
+  # Apply all sysctl conf.d files, including 99-inotify.conf written above.
+  # write_files runs before runcmd so the file is already in place here.
+  - ['sysctl', '--system']
+
   # One-command install, from https://tailscale.com/download/
   - ['sh', '-c', 'curl -fsSL https://tailscale.com/install.sh | sh']
   # Set sysctl settings for IP forwarding (useful when configuring an exit node)
@@ -41,6 +83,9 @@ runcmd:
     # Update unattended-upgrades config to set reboot time
     sed -i "s|^//Unattended-Upgrade::Automatic-RebootTime.*$|Unattended-Upgrade::Automatic-RebootTime \"$REBOOT_TIME\";|" /etc/apt/apt.conf.d/50unattended-upgrades
 
+  # Reload systemd so the apt-daily timeout overrides are active before the
+  # service is enabled. Must come after write_files has placed the overrides.
+  - ['systemctl', 'daemon-reload']
 
   # Enable and start unattended-upgrades
   - ['systemctl', 'enable', '--now', 'unattended-upgrades']
