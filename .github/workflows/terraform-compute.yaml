@@ -113,7 +113,7 @@ jobs:
         continue-on-error: true
 
       - name: Comment plan on PR
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           FMT_OUTCOME: ${{ steps.fmt.outcome }}
           PLAN_OUTCOME: ${{ steps.plan.outcome }}
