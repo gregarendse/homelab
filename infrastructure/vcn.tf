@@ -2,7 +2,7 @@
 # Source from https://registry.terraform.io/modules/oracle-terraform-modules/vcn/oci/
 module "vcn" {
   source  = "oracle-terraform-modules/vcn/oci"
-  version = "3.6.0"
+  version = "4.0.0"
 
   # Required Inputs
   compartment_id = oci_identity_compartment.homelab.id
