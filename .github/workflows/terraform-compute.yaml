@@ -85,7 +85,7 @@ jobs:
           printf '%s' "${{ secrets.OCI_PRIVATE_KEY }}" > "${{ github.workspace }}/oci_api_key.pem"
           printf '%s' "${{ vars.SSH_PUBLIC_KEY }}" > "${{ github.workspace }}/id_ssh.pub"
 
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
@@ -190,7 +190,7 @@ jobs:
           printf '%s' "${{ secrets.OCI_PRIVATE_KEY }}" > "${{ github.workspace }}/oci_api_key.pem"
           printf '%s' "${{ vars.SSH_PUBLIC_KEY }}" > "${{ github.workspace }}/id_ssh.pub"
 
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
