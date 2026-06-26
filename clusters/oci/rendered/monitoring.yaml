@@ -1,0 +1,27 @@
+# GENERATED FILE - DO NOT EDIT
+# Source: clusters/oci/apps.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: oci-monitoring
+  namespace: argocd
+  labels:
+    homelab.gregarendse/cluster: "oci"
+    homelab.gregarendse/app: "monitoring"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    targetRevision: "69.0.0"
+    chart: kube-prometheus-stack
+    helm:
+      releaseName: monitoring
+      valueFiles:
+        - https://raw.githubusercontent.com/gregarendse/homelab/master/applications/monitoring/values.yaml
