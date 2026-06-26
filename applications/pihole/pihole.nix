@@ -31,18 +31,6 @@
         };
       };
 
-      # Secret for Pi-hole admin password
-      secrets.pihole-secret = {
-        metadata = {
-          name = "pihole-secret";
-          namespace = "pihole";
-        };
-        type = "Opaque";
-        stringData = {
-          password = "admin123"; # Change this to your desired password
-        };
-      };
-
       # PersistentVolumeClaim for Pi-hole data
       persistentVolumeClaims.pihole-data = {
         metadata = {
@@ -117,6 +105,16 @@
                   {
                     name = "TZ";
                     value = "Europe/London";
+                  }
+                  {
+                    # Pi-hole admin password.
+                    # Create the secret manually:
+                    # kubectl create secret generic pihole-secret -n pihole --from-literal=password='YOUR_PASSWORD'
+                    name = "WEBPASSWORD";
+                    valueFrom.secretKeyRef = {
+                      name = "pihole-secret";
+                      key = "password";
+                    };
                   }
                 ];
                 volumeMounts = [
