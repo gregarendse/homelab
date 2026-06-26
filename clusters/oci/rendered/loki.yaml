@@ -13,15 +13,17 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: loki
+  # syncPolicy:
+  #   automated:
+  #     prune: true
+  #     selfHeal: true
   syncPolicy:
     syncOptions:
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true
   source:
     repoURL: https://grafana.github.io/helm-charts
-    targetRevision: "6.27.0"
+    targetRevision: 6.27.0
     chart: loki
     helm:
       releaseName: loki
-      valueFiles:
-        - https://raw.githubusercontent.com/gregarendse/homelab/master/applications/loki/values.yaml
