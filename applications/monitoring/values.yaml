@@ -1,0 +1,42 @@
+prometheus:
+  prometheusSpec:
+    retention: 7d
+    retentionSize: 10GB
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: longhorn
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 15GB
+
+grafana:
+  persistence:
+    enabled: true
+    storageClassName: longhorn
+    accessModes: ["ReadWriteOnce"]
+    size: 2GB
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    annotations:
+      kubernetes.io/tls-acme: "true"
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      traefik.ingress.kubernetes.io/router.middlewares: monitoring-monitoring-auth@kubernetescrd
+    hosts:
+      - grafana.arendse.nom.za
+    tls:
+      - secretName: grafana-tls
+        hosts:
+          - grafana.arendse.nom.za
+  grafana.ini:
+    server:
+      root_url: https://grafana.arendse.nom.za
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      access: proxy
+      url: http://loki.loki.svc.cluster.local:3100
+      version: 1
+      isDefault: false

@@ -94,6 +94,35 @@ apps:
     type: rendered
     path: applications/unifi
 
+  - name: monitoring
+    type: helm
+    namespace: monitoring
+    helm:
+      kind: remote
+      repoURL: https://prometheus-community.github.io/helm-charts
+      chart: kube-prometheus-stack
+      targetRevision: "69.0.0"
+      releaseName: monitoring
+      valueFiles:
+        - applications/monitoring/values.yaml
+
+  - name: monitoring-auth
+    type: rendered
+    path: applications/monitoring
+    # This will apply auth.yaml
+
+  - name: loki
+    type: helm
+    namespace: loki
+    helm:
+      kind: remote
+      repoURL: https://grafana.github.io/helm-charts
+      chart: loki
+      targetRevision: "6.27.0"
+      releaseName: loki
+      valueFiles:
+        - applications/loki/values.yaml
+
 # Disabling, going to use cloud providers, might come back to this at a later point
 #  - name: ollama
 #    type: rendered

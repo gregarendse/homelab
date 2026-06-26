@@ -1,0 +1,27 @@
+# GENERATED FILE - DO NOT EDIT
+# Source: clusters/oci/apps.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: oci-loki
+  namespace: argocd
+  labels:
+    homelab.gregarendse/cluster: "oci"
+    homelab.gregarendse/app: "loki"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: loki
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    targetRevision: "6.27.0"
+    chart: loki
+    helm:
+      releaseName: loki
+      valueFiles:
+        - https://raw.githubusercontent.com/gregarendse/homelab/master/applications/loki/values.yaml
