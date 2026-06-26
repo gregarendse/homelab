@@ -107,8 +107,11 @@ apps:
         - applications/monitoring/values.yaml
 
   - name: monitoring-auth
-    type: rendered
-    path: applications/monitoring
+    type: path
+    namespace: monitoring
+    helm:
+      kind: path
+      path: applications/monitoring
     # This will apply auth.yaml
 
   - name: loki
