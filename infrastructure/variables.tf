@@ -34,7 +34,6 @@ variable "fingerprint" {
 variable "private_key_path" {
   description = "Path to private key"
   type        = string
-  default     = "~/.oci/oci_api_key.pem"
 
   validation {
     condition     = can(file(var.private_key_path))
@@ -116,4 +115,10 @@ variable "public_key_path" {
     condition     = can(file(var.public_key_path))
     error_message = "Public key file not found"
   }
+}
+
+variable "loki_storage_bucket_name" {
+  description = "Name of the OCI Object Storage bucket for Loki logs"
+  type        = string
+  default     = "homelab-loki-logs"
 }
