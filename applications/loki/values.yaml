@@ -38,11 +38,21 @@ loki:
     retention_period: 168h # 7 days
 
   compactor:
-    working_directory: /data/retention
+    # Must live under /var/loki (the mounted PV); the container root FS is
+    # read-only, so /data is not writable.
+    working_directory: /var/loki/retention
     compaction_interval: 10m
     retention_enabled: true
     retention_delete_delay: 2h
     retention_delete_worker_count: 150
+    # Loki 3.x requires a delete_request_store when retention is enabled.
+    delete_request_store: s3
+
+# Inject the OCI S3 credentials from the Secret as env vars and enable env
+# expansion in the Loki config. The loki-s3-secret Secret is created by Terraform
+# (infrastructure/kubernetes/loki.tf). See applications/loki/README.md.
+# NOTE: these must live under `singleBinary` (not `global`) because only the
+# per-component blocks are wired into the StatefulSet in this chart version.
 
 # Inject the OCI S3 credentials from the Secret as env vars and enable env
 # expansion in the Loki config. The loki-s3-secret Secret is created by Terraform

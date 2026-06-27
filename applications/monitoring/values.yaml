@@ -9,21 +9,34 @@ prometheus:
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
-              storage: 15GB
+              storage: 15Gi
 
 grafana:
+  # Admin credentials are read from an externally-managed Secret rather than
+  # being templated by the chart. This keeps the password out of Helm's
+  # server-side-apply ownership (avoiding conflicts with manual edits) and out
+  # of values.yaml/Git. Create the Secret out-of-band before deploying:
+  #
+  #   kubectl -n monitoring create secret generic grafana-admin-credentials \
+  #     --from-literal=admin-user=admin \
+  #     --from-literal=admin-password='<strong-password>'
+  #
+  # See applications/monitoring/README.md.
+  admin:
+    existingSecret: grafana-admin-credentials
+    userKey: admin-user
+    passwordKey: admin-password
   persistence:
     enabled: true
     storageClassName: longhorn
     accessModes: ["ReadWriteOnce"]
-    size: 2GB
+    size: 2Gi
   ingress:
     enabled: true
     ingressClassName: traefik
     annotations:
       kubernetes.io/tls-acme: "true"
       cert-manager.io/cluster-issuer: "letsencrypt-prod"
-      traefik.ingress.kubernetes.io/router.middlewares: monitoring-monitoring-auth@kubernetescrd
     hosts:
       - grafana.arendse.nom.za
     tls:
