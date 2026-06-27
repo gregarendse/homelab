@@ -7,7 +7,7 @@ loki:
     s3:
       # OCI Object Storage S3 compatibility
       # Replace <namespace> and <region> with your OCI values
-      endpoint: https://<namespace>.compat.objectstorage.<region>.oraclecloud.com
+      endpoint: https://lrheyvqgbq67.compat.objectstorage.uk-london-1.oraclecloud.com
       bucketnames: homelab-loki-logs
       s3ForcePathStyle: true
       access_key_id:
@@ -41,13 +41,6 @@ singleBinary:
     storageClass: longhorn
     size: 5Gi
 
-# OCI S3 credentials need to be injected via a secret
-# Example secret:
-# apiVersion: v1
-# kind: Secret
-# metadata:
-#   name: loki-s3-secret
-#   namespace: loki
-# stringData:
-#   access_key: <OCI_ACCESS_KEY>
-#   secret_key: <OCI_SECRET_KEY>
+# OCI S3 credentials are injected via the `loki-s3-secret` Secret.
+# That Secret is created by Terraform (infrastructure/kubernetes/loki.tf) from
+# credentials provisioned in infrastructure/storage. See applications/loki/README.md.
