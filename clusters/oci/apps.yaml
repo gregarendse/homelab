@@ -114,6 +114,11 @@ apps:
       path: applications/monitoring
     # This will apply auth.yaml
 
+  - name: mktxp
+    type: rendered
+    namespace: monitoring
+    path: applications/mktxp
+
   - name: loki
     type: helm
     namespace: loki
@@ -134,4 +139,3 @@ apps:
 #  - name: open-webui
 #    type: rendered
 #    path: applications/open-webui
-
