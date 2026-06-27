@@ -1,0 +1,38 @@
+# Grafana Auth0 (generic OAuth) credentials for the kube-prometheus-stack release.
+#
+# This Secret is intentionally NOT managed by Helm/Terraform so the Auth0
+# client_id / client_secret never land in Git. applications/monitoring/values.yaml
+# references it by name only via grafana.envFromSecret: grafana-auth0.
+#
+# The keys MUST be named GF_AUTH_GENERIC_OAUTH_CLIENT_ID /
+# GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET: Grafana auto-maps environment variables of
+# the form GF_<SECTION>_<KEY> onto its config, so these populate
+# [auth.generic_oauth] client_id / client_secret.
+#
+# Usage:
+#   1. Copy this file to grafana-auth0.yaml (git-ignored) OR just create the
+#      Secret directly with kubectl (preferred):
+#
+#        kubectl -n monitoring create secret generic grafana-auth0 \
+#          --from-literal=GF_AUTH_GENERIC_OAUTH_CLIENT_ID='<auth0-client-id>' \
+#          --from-literal=GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET='<auth0-client-secret>'
+#
+#   2. Deploy/upgrade the monitoring release. Grafana reads the values from this
+#      Secret on startup.
+#
+#   3. To rotate the credentials later, update the Secret and restart Grafana:
+#        kubectl -n monitoring rollout restart deploy/monitoring-grafana
+#
+# See applications/monitoring/README.md for the matching Auth0 application setup.
+#
+# DO NOT commit a filled-in copy.
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grafana-auth0
+  namespace: monitoring
+type: Opaque
+stringData:
+  GF_AUTH_GENERIC_OAUTH_CLIENT_ID: <secret>
+  GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET: <secret>

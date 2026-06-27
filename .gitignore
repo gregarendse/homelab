@@ -27,6 +27,8 @@ secret.yaml
 longhorn-backup-secret.yaml
 # Filled-in Grafana admin credentials (the .example.yaml template is committed)
 grafana-admin-credentials.yaml
+# Filled-in Grafana Auth0 credentials (the .example.yaml template is committed)
+grafana-auth0.yaml
 result
 result.json
 

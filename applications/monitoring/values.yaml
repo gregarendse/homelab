@@ -43,9 +43,36 @@ grafana:
       - secretName: grafana-tls
         hosts:
           - grafana.arendse.nom.za
+
+  # client_id / client_secret are injected as env vars from this Secret and
+  # auto-mapped by Grafana to [auth.generic_oauth] (GF_AUTH_GENERIC_OAUTH_*).
+  # The Secret is created out-of-band — see applications/monitoring/README.md.
+  envFromSecret: grafana-auth0
   grafana.ini:
     server:
       root_url: https://grafana.arendse.nom.za
+
+    auth:
+      # Disable basic auth login form — Auth0 only
+      disable_login_form: true # set true once you've confirmed OAuth works
+      oauth_auto_login: true # set true once confirmed — skips the Grafana login page
+    auth.generic_oauth:
+      enabled: true
+      name: Auth0
+      icon: signin
+      # offline_access is required for refresh tokens (use_refresh_token below).
+      # Also enable "Allow Offline Access" on the Auth0 API.
+      scopes: openid profile email offline_access
+      auth_url: https://arendse.uk.auth0.com/authorize
+      token_url: https://arendse.uk.auth0.com/oauth/token
+      api_url: https://arendse.uk.auth0.com/userinfo
+      use_pkce: true
+      use_refresh_token: true
+      # client_id / client_secret come from the grafana-auth0 Secret via
+      # envFromSecret (GF_AUTH_GENERIC_OAUTH_CLIENT_ID / _CLIENT_SECRET).
+      # Map Auth0 roles — adjust to match claims you set up in Auth0
+      role_attribute_path: contains(email, 'greg.arendse@gmail.com') && 'Admin' || 'Viewer'
+
   additionalDataSources:
     - name: Loki
       type: loki
