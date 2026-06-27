@@ -1,0 +1,29 @@
+# GENERATED FILE - DO NOT EDIT
+# Source: clusters/trinity/apps.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: trinity-recyclarr
+  namespace: argocd
+  labels:
+    homelab.gregarendse/cluster: "trinity"
+    homelab.gregarendse/app: "recyclarr"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: recyclarr
+  # syncPolicy:
+  #   automated:
+  #     prune: true
+  #     selfHeal: true
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+  source:
+    repoURL: https://github.com/gregarendse/homelab.git
+    targetRevision: master
+    path: clusters/trinity/rendered/recyclarr
+    directory:
+      recurse: true
