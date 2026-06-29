@@ -38,9 +38,6 @@ ports:
     target: 7878
     protocol: TCP
 
-vpa:
-  updateMode: InPlaceOrRecreate
-
 ingress:
   annotations:
     kubernetes.io/tls-acme: "true"

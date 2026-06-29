@@ -87,7 +87,7 @@ vpa:
   enabled: true
   # "Off" = recommendations only (no automatic changes).
   # "Auto"/"Recreate"/"InPlaceOrRecreate" = VPA actively applies resources.
-  updateMode: "Off"
+  updateMode: "InPlaceOrRecreate"
   minAllowed:
     cpu: 10m
     memory: 16Mi
