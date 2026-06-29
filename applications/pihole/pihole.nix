@@ -32,16 +32,9 @@
       };
 
       # Secret for Pi-hole admin password
-      secrets.pihole-secret = {
-        metadata = {
-          name = "pihole-secret";
-          namespace = "pihole";
-        };
-        type = "Opaque";
-        stringData = {
-          password = "admin123"; # Change this to your desired password
-        };
-      };
+      # This Secret is intentionally NOT managed by GitOps to avoid plaintext passwords in Git.
+      # Create it manually before deploying:
+      #   kubectl -n pihole create secret generic pihole-secret --from-literal=password='<your-password>'
 
       # PersistentVolumeClaim for Pi-hole data
       persistentVolumeClaims.pihole-data = {

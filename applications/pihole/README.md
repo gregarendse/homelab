@@ -25,7 +25,16 @@ This directory contains kubenix configuration files to generate Kubernetes manif
 The PVC uses `storageClassName = "longhorn"`. Update this in `pihole.nix` if your cluster uses a different storage class.
 
 ### Password
-Change the default admin password in the secret configuration in `pihole.nix`.
+The admin password is managed via a Kubernetes Secret named `pihole-secret`. This secret is **not managed by GitOps** to prevent plaintext passwords from being committed to the repository.
+
+Create the secret manually in the `pihole` namespace before deploying:
+
+```bash
+kubectl create namespace pihole
+kubectl create secret generic pihole-secret \
+  --from-literal=password='your-strong-password' \
+  -n pihole
+```
 
 ### DNS Settings
 Modify the custom DNS settings in the ConfigMap to add your local domain mappings.
