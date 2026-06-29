@@ -13,10 +13,6 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: echo
-  # syncPolicy:
-  #   automated:
-  #     prune: true
-  #     selfHeal: true
   syncPolicy:
     syncOptions:
       - CreateNamespace=true

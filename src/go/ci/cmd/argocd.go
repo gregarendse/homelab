@@ -14,7 +14,8 @@ import (
 // --- inventory types ---
 
 type inventory struct {
-	Apps []app `yaml:"apps"`
+	AutoSync bool  `yaml:"autoSync"`
+	Apps     []app `yaml:"apps"`
 }
 
 type app struct {
@@ -74,6 +75,7 @@ type appData struct {
 	HelmRepoURL        string
 	HelmTargetRevision string
 	ValueFiles         string
+	AutoSync           bool
 }
 
 var appTpl = template.Must(template.New("app").Parse(`# GENERATED FILE - DO NOT EDIT
@@ -91,11 +93,12 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: {{ .Namespace }}
-  # syncPolicy:
-  #   automated:
-  #     prune: true
-  #     selfHeal: true
   syncPolicy:
+{{- if .AutoSync }}
+    automated:
+      prune: true
+      selfHeal: true
+{{- end }}
     syncOptions:
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true
@@ -143,7 +146,7 @@ spec:
 {{- end }}
 `))
 
-func appToData(a app, cluster string, repoURL, targetRevision, argoNamespace, argoProject string) (appData, error) {
+func appToData(a app, cluster string, repoURL, targetRevision, argoNamespace, argoProject string, autoSync bool) (appData, error) {
 	d := appData{
 		Name:           a.Name,
 		Cluster:        cluster,
@@ -153,6 +156,7 @@ func appToData(a app, cluster string, repoURL, targetRevision, argoNamespace, ar
 		ArgoNamespace:  argoNamespace,
 		ArgoProject:    argoProject,
 		Type:           a.Type,
+		AutoSync:       autoSync,
 	}
 	if a.Helm != nil {
 		d.HelmKind = a.Helm.Kind
@@ -244,7 +248,7 @@ var argocdGenerateCmd = &cobra.Command{
 				return err
 			}
 			for _, a := range inv.Apps {
-				d, err := appToData(a, cluster, argocdRepoURL, argocdTargetRevision, argocdArgoNamespace, argocdArgoProject)
+				d, err := appToData(a, cluster, argocdRepoURL, argocdTargetRevision, argocdArgoNamespace, argocdArgoProject, inv.AutoSync)
 				if err != nil {
 					return err
 				}

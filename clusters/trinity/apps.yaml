@@ -1,3 +1,6 @@
+# autoSync enables ArgoCD automated sync (prune + selfHeal) for every generated
+# app in this cluster. Leave unset/false to require manual syncs.
+autoSync: true
 apps:
   # In-repo "server" Helm chart releases (values live under applications/<app>/values.yaml)
   - name: actual
