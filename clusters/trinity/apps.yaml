@@ -45,6 +45,11 @@ apps:
       releaseName: prowlarr
       valueFiles:
         - applications/prowlarr/values.yaml
+  - name: recyclarr
+    type: rendered
+    namespace: recyclarr
+    path: applications/recyclarr
+
   - name: radarr
     type: helm
     namespace: radarr
