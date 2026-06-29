@@ -9,7 +9,7 @@ prometheus:
             # Longhorn backup cycle: Saturday (staggered to spread B2 traffic)
             recurring-job-group.longhorn.io/saturday-backup: enabled
         spec:
-          storageClassName: longhorn
+          storageClassName: longhorn-r1
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
@@ -32,7 +32,7 @@ grafana:
     passwordKey: admin-password
   persistence:
     enabled: true
-    storageClassName: longhorn
+    storageClassName: longhorn-r1
     accessModes: ["ReadWriteOnce"]
     size: 2Gi
     # Longhorn backup cycle: Saturday (staggered to spread B2 traffic)

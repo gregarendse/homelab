@@ -54,6 +54,31 @@ locals {
   longhorn_backup_secret_name = "longhorn-backup-b2"
 }
 
+# Single-replica StorageClass for volumes that don't need Longhorn redundancy.
+# The cluster is single-node, so anything requesting >1 replica sits permanently
+# degraded (anti-affinity can't place replicas on a second node). The built-in
+# `longhorn` class carries numberOfReplicas=3, so charts that pin to it (loki,
+# grafana, prometheus) need this class to stay healthy.
+resource "kubernetes_manifest" "longhorn_r1_storageclass" {
+  manifest = {
+    apiVersion = "storage.k8s.io/v1"
+    kind       = "StorageClass"
+    metadata = {
+      name = "longhorn-r1"
+    }
+    provisioner          = "driver.longhorn.io"
+    allowVolumeExpansion = true
+    reclaimPolicy        = "Delete"
+    volumeBindingMode    = "Immediate"
+    parameters = {
+      numberOfReplicas    = "1"
+      staleReplicaTimeout = "30"
+    }
+  }
+
+  depends_on = [helm_release.longhorn]
+}
+
 # Backups are staggered across the week to stay under Backblaze B2's free-tier
 # Class B (LIST/HEAD) transaction cap. Instead of one job that backs up the
 # whole `default` group every night, each weekday has its own group + job, so
