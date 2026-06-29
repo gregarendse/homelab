@@ -1,43 +1,46 @@
 image:
-    repository: plexinc/pms-docker
-    # Overrides the image tag whose default is the chart appVersion.
-    tag: "latest"
-    pullPolicy: Always
+  repository: plexinc/pms-docker
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+  pullPolicy: Always
 
 volumes:
-    config:
-        source: "/mnt/data/plex/config"
-        dest: "/config"
-    transcode:
-        source: "/mnt/data/plex/transcode"
-        dest: "/transcode"
-    data:
-        source: "/red"
-        dest: "/red"
+  config:
+    source: "/mnt/data/plex/config"
+    dest: "/config"
+  transcode:
+    source: "/mnt/data/plex/transcode"
+    dest: "/transcode"
+  data:
+    source: "/red"
+    dest: "/red"
 
 environment:
-    - name: ADVERTISE_IP 
-      value: http://192.168.0.50:32400
-    - name: HOSTNAME
-      value: "arendse.ddns.net"
-    - name: PLEX_UID
-      value: "114"
-    - name: PLEX_GID
-      value: "118"
-    - name: TZ
-      value: Africa/Johannaesburg
+  - name: ADVERTISE_IP
+    value: http://192.168.0.50:32400
+  - name: HOSTNAME
+    value: "arendse.ddns.net"
+  - name: PLEX_UID
+    value: "114"
+  - name: PLEX_GID
+    value: "118"
+  - name: TZ
+    value: Africa/Johannaesburg
 
 secrets:
   environment:
     - plex-secret
 
+vpa:
+  enabled: false
+
 service:
   type: NodePort
 
 ports:
-# https://support.plex.tv/articles/201543147-what-network-ports-do-i-need-to-allow-through-my-firewall/
+  # https://support.plex.tv/articles/201543147-what-network-ports-do-i-need-to-allow-through-my-firewall/
   # (access to the Plex Media Server) [required]
-  plexmediaserver: 
+  plexmediaserver:
     target: 32400
     nodePort: 32400
     protocol: TCP
