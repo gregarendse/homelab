@@ -57,7 +57,7 @@ controller:
   # -- Annotations to be added to the controller config configuration configmap.
   configAnnotations: {}
   # -- Will add custom headers before sending traffic to backends according to https://github.com/kubernetes/ingress-nginx/tree/main/docs/examples/customization/custom-headers
-proxySetHeaders: {}
+  proxySetHeaders: {}
   # -- Will add custom headers before sending response traffic to the client according to: https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/configmap/#add-headers
   addHeaders: {}
   # -- Optionally customize the pod dnsConfig.
@@ -1192,4 +1192,3 @@ portNamePrefix: ""
 # This can be generated with: `openssl dhparam 4096 2> /dev/null | base64`
 ## Ref: https://github.com/kubernetes/ingress-nginx/tree/main/docs/examples/customization/ssl-dh-param
 dhParam: ""
-
