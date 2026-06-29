@@ -2,6 +2,7 @@
 ---
 image:
   repository: actualbudget/actual-server
+  tag: latest-alpine
 
 volumes:
   data:
@@ -11,6 +12,8 @@ volumes:
 environment:
   - name: TZ
     value: Africa/Johannaesburg
+  - name: ACTUAL_PORT
+    value: "5006"
 
 ports:
   http:
