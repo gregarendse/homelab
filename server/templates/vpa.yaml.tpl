@@ -1,3 +1,4 @@
+{{- if .Values.vpa.enabled }}
 ---
 apiVersion: autoscaling.k8s.io/v1
 kind: VerticalPodAutoscaler
@@ -13,13 +14,14 @@ spec:
     kind: Deployment
     name: {{ include "server.fullname" . }}
   updatePolicy:
-    updateMode: "Off"
+    updateMode: {{ .Values.vpa.updateMode | quote }}
   resourcePolicy:
     containerPolicies:
     - containerName: {{ .Release.Name }}
       maxAllowed:
-        cpu: 8
-        memory: 16Gi
+        cpu: {{ .Values.vpa.maxAllowed.cpu }}
+        memory: {{ .Values.vpa.maxAllowed.memory }}
       minAllowed:
-        cpu: 10m
-        memory: 16Mi
+        cpu: {{ .Values.vpa.minAllowed.cpu }}
+        memory: {{ .Values.vpa.minAllowed.memory }}
+{{- end }}
