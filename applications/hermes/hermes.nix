@@ -19,7 +19,7 @@
     resources = {
 
       # ── Namespace ──────────────────────────────────────────────────────────
-      namespaces.hermes = {};
+      namespaces.hermes = { };
 
       # ── Persistent storage for /opt/data ───────────────────────────────────
       # Holds sessions/, memories/, skills/, SOUL.md, logs/, cron/, hooks/.
@@ -28,7 +28,11 @@
         metadata = {
           name = "hermes-data";
           namespace = "hermes";
-          labels.app = "hermes";
+          labels = {
+            app = "hermes";
+            # Longhorn backup cycle: Friday (staggered to spread B2 traffic)
+            "recurring-job-group.longhorn.io/friday-backup" = "enabled";
+          };
         };
         spec = {
           accessModes = [ "ReadWriteOnce" ];
@@ -51,9 +55,9 @@
           namespace = "hermes";
           labels.app = "hermes";
         };
-#        data."config.yaml" = builtins.readFile ./config-ollama.yaml;
+        #        data."config.yaml" = builtins.readFile ./config-ollama.yaml;
         # Variant B — cloud provider:
-         data."config.yaml" = builtins.readFile ./config-cloud.yaml;
+        data."config.yaml" = builtins.readFile ./config-cloud.yaml;
       };
 
       # ── Deployment ─────────────────────────────────────────────────────────
@@ -93,24 +97,50 @@
                   # Pass args (not command) so the official entrypoint.sh runs
                   # first: it bootstraps /opt/data and gosu-drops to the hermes
                   # user before exec-ing the gateway.
-                  args = [ "gateway" "run" ];
+                  args = [
+                    "gateway"
+                    "run"
+                  ];
 
                   ports = [
-                    { name = "gateway";   containerPort = 8642; protocol = "TCP"; }
-                    { name = "dashboard"; containerPort = 9119; protocol = "TCP"; }
+                    {
+                      name = "gateway";
+                      containerPort = 8642;
+                      protocol = "TCP";
+                    }
+                    {
+                      name = "dashboard";
+                      containerPort = 9119;
+                      protocol = "TCP";
+                    }
                   ];
 
                   # Static, non-secret configuration committed in plain text.
                   env = [
-#                  The dashboard has no auth on it, so its not safe to expose publicly. ToDo: Can we expose this safely?
-#                    { name = "HERMES_DASHBOARD";      value = "1"; }
-#                    { name = "HERMES_DASHBOARD_HOST"; value = "0.0.0.0"; }
-#                    { name = "HERMES_DASHBOARD_PORT"; value = "9119"; }
-                    { name = "HERMES_UID";            value = "10000"; }
-                    { name = "HERMES_GID";            value = "10000"; }
-                    { name = "API_SERVER_ENABLED";    value = "true"; }
-                    { name = "API_SERVER_HOST";       value = "0.0.0.0"; }
-                    { name = "HASS_URL";              value = "http://home-assistant.home-assistant:8123"; }
+                    #                  The dashboard has no auth on it, so its not safe to expose publicly. ToDo: Can we expose this safely?
+                    #                    { name = "HERMES_DASHBOARD";      value = "1"; }
+                    #                    { name = "HERMES_DASHBOARD_HOST"; value = "0.0.0.0"; }
+                    #                    { name = "HERMES_DASHBOARD_PORT"; value = "9119"; }
+                    {
+                      name = "HERMES_UID";
+                      value = "10000";
+                    }
+                    {
+                      name = "HERMES_GID";
+                      value = "10000";
+                    }
+                    {
+                      name = "API_SERVER_ENABLED";
+                      value = "true";
+                    }
+                    {
+                      name = "API_SERVER_HOST";
+                      value = "0.0.0.0";
+                    }
+                    {
+                      name = "HASS_URL";
+                      value = "http://home-assistant.home-assistant:8123";
+                    }
                   ];
 
                   # All secret values (API keys, bot tokens, etc.) are injected
@@ -124,20 +154,20 @@
                   # syncs bundled skills).  Give it up to 5 minutes.
                   startupProbe = {
                     tcpSocket.port = "gateway";
-                    periodSeconds    = 10;
-                    timeoutSeconds   = 5;
+                    periodSeconds = 10;
+                    timeoutSeconds = 5;
                     failureThreshold = 30;
                   };
                   readinessProbe = {
                     tcpSocket.port = "gateway";
-                    periodSeconds    = 15;
-                    timeoutSeconds   = 5;
+                    periodSeconds = 15;
+                    timeoutSeconds = 5;
                     failureThreshold = 3;
                   };
                   livenessProbe = {
                     tcpSocket.port = "gateway";
-                    periodSeconds    = 30;
-                    timeoutSeconds   = 5;
+                    periodSeconds = 30;
+                    timeoutSeconds = 5;
                     failureThreshold = 3;
                   };
 
@@ -146,11 +176,11 @@
                   # emptyDir sizeLimit if you enable HERMES_BROWSER=1.
                   resources = {
                     requests = {
-                      cpu    = "250m";
+                      cpu = "250m";
                       memory = "512Mi";
                     };
                     limits = {
-                      cpu    = "1000m";
+                      cpu = "1000m";
                       memory = "2048Mi";
                     };
                   };
@@ -158,26 +188,26 @@
                   volumeMounts = [
                     {
                       # Primary data volume: sessions, memories, skills, SOUL.md.
-                      name      = "hermes-data";
+                      name = "hermes-data";
                       mountPath = "/opt/data";
                     }
                     {
                       # GitOps-managed provider config overlaid on the PVC.
                       # subPath ensures only config.yaml is replaced; all other
                       # /opt/data paths continue to read from the PVC.
-                      name      = "hermes-config";
+                      name = "hermes-config";
                       mountPath = "/opt/data/config.yaml";
-                      subPath   = "config.yaml";
-                      readOnly  = true;
+                      subPath = "config.yaml";
+                      readOnly = true;
                     }
                     {
                       # Shared memory for Playwright/Chromium.  Harmless when
                       # browser tools are not in use.
-                      name      = "dshm";
+                      name = "dshm";
                       mountPath = "/dev/shm";
                     }
                     {
-                      name      = "tmp-volume";
+                      name = "tmp-volume";
                       mountPath = "/tmp";
                     }
                   ];
@@ -190,21 +220,21 @@
                   persistentVolumeClaim.claimName = "hermes-data";
                 }
                 {
-                  name           = "hermes-config";
+                  name = "hermes-config";
                   configMap.name = "hermes-config";
                 }
                 {
                   # 1 Gi shared memory for Playwright.  Safe to reduce to 256Mi
                   # if browser tools will never be enabled.
-                  name     = "dshm";
+                  name = "dshm";
                   emptyDir = {
-                    medium    = "Memory";
+                    medium = "Memory";
                     sizeLimit = "1Gi";
                   };
                 }
                 {
-                  name     = "tmp-volume";
-                  emptyDir = {};
+                  name = "tmp-volume";
+                  emptyDir = { };
                 }
               ];
             };
@@ -215,16 +245,26 @@
       # ── Services ─────────────────────────────────────────────────────────
       services.hermes = {
         metadata = {
-          name      = "hermes";
+          name = "hermes";
           namespace = "hermes";
           labels.app = "hermes";
         };
         spec = {
-          type         = "ClusterIP";
+          type = "ClusterIP";
           selector.app = "hermes";
           ports = [
-            { name = "gateway";   port = 8642; targetPort = "gateway";   protocol = "TCP"; }
-            { name = "dashboard"; port = 9119; targetPort = "dashboard"; protocol = "TCP"; }
+            {
+              name = "gateway";
+              port = 8642;
+              targetPort = "gateway";
+              protocol = "TCP";
+            }
+            {
+              name = "dashboard";
+              port = 9119;
+              targetPort = "dashboard";
+              protocol = "TCP";
+            }
           ];
         };
       };
@@ -232,44 +272,44 @@
       # ── Ingress (dashboard) ───────────────────────────────────────────────
       # Exposes the Hermes web dashboard via Traefik + Cloudflare + cert-manager.
       # Update the hostname to match your domain before enrolling in apps.yaml.
-#      ingresses."hermes-ingress" = {
-#        metadata = {
-#          name      = "hermes-ingress";
-#          namespace = "hermes";
-#          annotations = {
-#            "external-dns.alpha.kubernetes.io/cloudflare-proxied" = "true";
-#            "external-dns.alpha.kubernetes.io/cloudflare-tags"    = "app=hermes,env=prod,owner=homelab";
-#            "cert-manager.io/cluster-issuer"                      = "letsencrypt-prod";
-#            "traefik.ingress.kubernetes.io/router.entrypoints"    = "websecure";
-#            "traefik.ingress.kubernetes.io/router.tls"            = "true";
-#          };
-#        };
-#        spec = {
-#          ingressClassName = "traefik";
-#          tls = [
-#            {
-#              hosts      = [ "hermes.arendse.nom.za" ];
-#              secretName = "hermes-tls";
-#            }
-#          ];
-#          rules = [
-#            {
-#              host = "hermes.arendse.nom.za";
-#              http.paths = [
-#                {
-#                  path     = "/";
-#                  pathType = "Prefix";
-#                  backend.service = {
-#                    name = "hermes";
-#                    # Route to the dashboard port (9119), not the gateway API.
-#                    port.number = 9119;
-#                  };
-#                }
-#              ];
-#            }
-#          ];
-#        };
-#      };
+      #      ingresses."hermes-ingress" = {
+      #        metadata = {
+      #          name      = "hermes-ingress";
+      #          namespace = "hermes";
+      #          annotations = {
+      #            "external-dns.alpha.kubernetes.io/cloudflare-proxied" = "true";
+      #            "external-dns.alpha.kubernetes.io/cloudflare-tags"    = "app=hermes,env=prod,owner=homelab";
+      #            "cert-manager.io/cluster-issuer"                      = "letsencrypt-prod";
+      #            "traefik.ingress.kubernetes.io/router.entrypoints"    = "websecure";
+      #            "traefik.ingress.kubernetes.io/router.tls"            = "true";
+      #          };
+      #        };
+      #        spec = {
+      #          ingressClassName = "traefik";
+      #          tls = [
+      #            {
+      #              hosts      = [ "hermes.arendse.nom.za" ];
+      #              secretName = "hermes-tls";
+      #            }
+      #          ];
+      #          rules = [
+      #            {
+      #              host = "hermes.arendse.nom.za";
+      #              http.paths = [
+      #                {
+      #                  path     = "/";
+      #                  pathType = "Prefix";
+      #                  backend.service = {
+      #                    name = "hermes";
+      #                    # Route to the dashboard port (9119), not the gateway API.
+      #                    port.number = 9119;
+      #                  };
+      #                }
+      #              ];
+      #            }
+      #          ];
+      #        };
+      #      };
 
     };
   };

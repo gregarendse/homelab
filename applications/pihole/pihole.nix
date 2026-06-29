@@ -4,10 +4,10 @@
 
   kubernetes = {
     version = "1.28";
-    
+
     resources = {
       # Namespace
-      namespaces.pihole = {};
+      namespaces.pihole = { };
 
       # ConfigMap for Pi-hole custom DNS settings
       configMaps.custom-dnsmasq = {
@@ -48,9 +48,11 @@
         metadata = {
           name = "pihole-data";
           namespace = "pihole";
+          # Longhorn backup cycle: Thursday (staggered to spread B2 traffic)
+          labels."recurring-job-group.longhorn.io/thursday-backup" = "enabled";
         };
         spec = {
-          accessModes = ["ReadWriteOnce"];
+          accessModes = [ "ReadWriteOnce" ];
           resources.requests.storage = "1Gi";
           storageClassName = "longhorn"; # Adjust to your storage class
         };
@@ -78,87 +80,89 @@
               app = "pihole";
             };
             spec = {
-              containers = [{
-                name = "pihole";
-                image = "pihole/pihole:2026.04.1";
-                ports = [
-                  {
-                    name = "dns-tcp";
-                    containerPort = 53;
-                    protocol = "TCP";
-                  }
-                  {
-                    name = "dns-udp";
-                    containerPort = 53;
-                    protocol = "UDP";
-                  }
-                  {
-                    name = "http";
-                    containerPort = 80;
-                    protocol = "TCP";
-                  }
-                  {
-                    name = "https";
-                    containerPort = 443;
-                    protocol = "TCP";
-                  }
-                  {
-                    name = "dhcp";
-                    containerPort = 67;
-                    protocol = "UDP";
-                  }
-                  {
-                    name = "ntp";
-                    containerPort = 123;
-                    protocol = "UDP";
-                  }
-                ];
-                env = [
-                  {
-                    name = "TZ";
-                    value = "Europe/London";
-                  }
-                ];
-                volumeMounts = [
-                  {
-                    name = "pihole-data";
-                    mountPath = "/etc/pihole";
-                    subPath = "pihole";
-                  }
-                  {
-                    name = "pihole-data";
-                    mountPath = "/etc/dnsmasq.d";
-                    subPath = "dnsmasq.d";
-                  }
-                  {
-                    name = "custom-dnsmasq";
-                    mountPath = "/etc/dnsmasq.d/50-custom.conf";
-                    subPath = "50-custom.conf";
-                  }
-                  {
-                    name = "pihole-config";
-                    mountPath = "/etc/pihole/pihole.toml";
-                    subPath = "pihole.toml";
-                  }
-                  {
-                    # Override the default 64MB /dev/shm limit so FTL doesn't OOM
-                    name = "dshm";
-                    mountPath = "/dev/shm";
-                  }
-                ];
-                resources = {
-                  requests = {
-                    # /dev/shm 128Mi + 256Mi
-                    memory = "384Mi";
-                    cpu = "500m";
+              containers = [
+                {
+                  name = "pihole";
+                  image = "pihole/pihole:2026.04.1";
+                  ports = [
+                    {
+                      name = "dns-tcp";
+                      containerPort = 53;
+                      protocol = "TCP";
+                    }
+                    {
+                      name = "dns-udp";
+                      containerPort = 53;
+                      protocol = "UDP";
+                    }
+                    {
+                      name = "http";
+                      containerPort = 80;
+                      protocol = "TCP";
+                    }
+                    {
+                      name = "https";
+                      containerPort = 443;
+                      protocol = "TCP";
+                    }
+                    {
+                      name = "dhcp";
+                      containerPort = 67;
+                      protocol = "UDP";
+                    }
+                    {
+                      name = "ntp";
+                      containerPort = 123;
+                      protocol = "UDP";
+                    }
+                  ];
+                  env = [
+                    {
+                      name = "TZ";
+                      value = "Europe/London";
+                    }
+                  ];
+                  volumeMounts = [
+                    {
+                      name = "pihole-data";
+                      mountPath = "/etc/pihole";
+                      subPath = "pihole";
+                    }
+                    {
+                      name = "pihole-data";
+                      mountPath = "/etc/dnsmasq.d";
+                      subPath = "dnsmasq.d";
+                    }
+                    {
+                      name = "custom-dnsmasq";
+                      mountPath = "/etc/dnsmasq.d/50-custom.conf";
+                      subPath = "50-custom.conf";
+                    }
+                    {
+                      name = "pihole-config";
+                      mountPath = "/etc/pihole/pihole.toml";
+                      subPath = "pihole.toml";
+                    }
+                    {
+                      # Override the default 64MB /dev/shm limit so FTL doesn't OOM
+                      name = "dshm";
+                      mountPath = "/dev/shm";
+                    }
+                  ];
+                  resources = {
+                    requests = {
+                      # /dev/shm 128Mi + 256Mi
+                      memory = "384Mi";
+                      cpu = "500m";
+                    };
+                    limits = {
+                      # /dev/shm 128Mi + 512Mi
+                      memory = "640Mi";
+                      cpu = "1000m";
+                    };
                   };
-                  limits = {
-                    # /dev/shm 128Mi + 512Mi
-                    memory = "640Mi";
-                    cpu = "1000m";
-                  };
-                };
-              }];
+                }
+              ];
               volumes = [
                 {
                   name = "pihole-data";
@@ -221,18 +225,18 @@
               nodePort = 30053; # Optional: specify NodePort if needed
             }
             {
-                name = "dhcp-udp";
-                port = 67;
-                targetPort = 67;
-                protocol = "UDP";
-                nodePort = 30067; # Optional: specify NodePort if needed
+              name = "dhcp-udp";
+              port = 67;
+              targetPort = 67;
+              protocol = "UDP";
+              nodePort = 30067; # Optional: specify NodePort if needed
             }
             {
-                name = "ntp-udp";
-                port = 123;
-                targetPort = 123;
-                protocol = "UDP";
-                nodePort = 30123; # Optional: specify NodePort if needed
+              name = "ntp-udp";
+              port = 123;
+              targetPort = 123;
+              protocol = "UDP";
+              nodePort = 30123; # Optional: specify NodePort if needed
             }
           ];
         };
@@ -277,26 +281,32 @@
           namespace = "pihole";
           annotations = {
             "external-dns.alpha.kubernetes.io/cloudflare-proxied" = "true";
-            "external-dns.alpha.kubernetes.io/cloudflare-tags"   = "app=pihole,env=prod,owner=homelab";
+            "external-dns.alpha.kubernetes.io/cloudflare-tags" = "app=pihole,env=prod,owner=homelab";
             "cert-manager.io/cluster-issuer" = "letsencrypt-prod";
           };
         };
         spec = {
-          tls = [{
-            hosts = ["pihole.arendse.nom.za"];
-            secretName = "pihole-tls";
-          }];
-          rules = [{
-            host = "pihole.arendse.nom.za";
-            http.paths = [{
-              path = "/";
-              pathType = "Prefix";
-              backend.service = {
-                name = "pihole-web";
-                port.number = 80;
-              };
-            }];
-          }];
+          tls = [
+            {
+              hosts = [ "pihole.arendse.nom.za" ];
+              secretName = "pihole-tls";
+            }
+          ];
+          rules = [
+            {
+              host = "pihole.arendse.nom.za";
+              http.paths = [
+                {
+                  path = "/";
+                  pathType = "Prefix";
+                  backend.service = {
+                    name = "pihole-web";
+                    port.number = 80;
+                  };
+                }
+              ];
+            }
+          ];
         };
       };
     };

@@ -6,7 +6,7 @@
     version = "1.28";
 
     resources = {
-      namespaces.mongo = {};
+      namespaces.mongo = { };
 
       configMaps."unifi" = {
         metadata = {
@@ -112,6 +112,8 @@
             {
               metadata = {
                 name = "data";
+                # Longhorn backup cycle: Tuesday (staggered to spread B2 traffic)
+                labels."recurring-job-group.longhorn.io/tuesday-backup" = "enabled";
               };
               spec = {
                 accessModes = [ "ReadWriteOnce" ];

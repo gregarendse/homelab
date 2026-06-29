@@ -4,6 +4,10 @@ prometheus:
     retentionSize: 10GB
     storageSpec:
       volumeClaimTemplate:
+        metadata:
+          labels:
+            # Longhorn backup cycle: Saturday (staggered to spread B2 traffic)
+            recurring-job-group.longhorn.io/saturday-backup: enabled
         spec:
           storageClassName: longhorn
           accessModes: ["ReadWriteOnce"]
@@ -31,6 +35,9 @@ grafana:
     storageClassName: longhorn
     accessModes: ["ReadWriteOnce"]
     size: 2Gi
+    # Longhorn backup cycle: Saturday (staggered to spread B2 traffic)
+    extraPvcLabels:
+      recurring-job-group.longhorn.io/saturday-backup: enabled
   ingress:
     enabled: true
     ingressClassName: traefik
