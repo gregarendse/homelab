@@ -1,44 +1,33 @@
 image:
-    repository: lscr.io/linuxserver/prowlarr
-    # Overrides the image tag whose default is the chart appVersion.
-    tag: latest
-    pullPolicy: Always
+  repository: lscr.io/linuxserver/prowlarr
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: latest
+  pullPolicy: Always
 
 volumes:
-    config:
-        source: "/mnt/data/prowlarr/config"
-        dest: "/config"
+  config:
+    source: "/mnt/data/prowlarr/config"
+    dest: "/config"
 
 environment:
-    - name: PUID
-      value: "997"
-    - name: "PGID" 
-      value: "997"
-    - name: TZ
-      value: Africa/Johannaesburg
+  - name: PUID
+    value: "997"
+  - name: "PGID"
+    value: "997"
+  - name: TZ
+    value: Africa/Johannaesburg
 
 ports:
-    http:
-        target: 9696
-        protocol: TCP
+  http:
+    target: 9696
+    protocol: TCP
 
 ingress:
   annotations:
-#     kubernetes.io/ingress.class: public
-#     kubernetes.io/tls-acme: "true"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
   hosts:
-    - host: arendse.nom.za
-      path: /prowlarr
-      service:
-        name: http
     - host: prowlarr.arendse.nom.za
       tls: true
       path: /
-      service:
-        name: http
-    - host: arendse.ddns.net
-      tls: true
-      path: /prowlarr
       service:
         name: http

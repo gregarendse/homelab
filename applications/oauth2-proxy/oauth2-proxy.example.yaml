@@ -1,0 +1,34 @@
+# oauth2-proxy credentials for the Auth0 forward-auth gateway.
+#
+# This Secret is intentionally NOT managed by Helm/Argo so the Auth0 client
+# credentials and cookie secret never land in Git. applications/oauth2-proxy/values.yaml
+# references it by name only via config.existingSecret: oauth2-proxy.
+#
+# Required keys (names are dictated by the oauth2-proxy chart):
+#   client-id      - Auth0 application Client ID
+#   client-secret  - Auth0 application Client Secret
+#   cookie-secret  - random 32-byte value, base64-encoded (used to encrypt the
+#                    session cookie). Generate with:
+#                      openssl rand -base64 32 | tr -- '+/' '-_'
+#
+# Usage (preferred — create directly with kubectl):
+#
+#   kubectl -n oauth2-proxy create secret generic oauth2-proxy \
+#     --from-literal=client-id='<auth0-client-id>' \
+#     --from-literal=client-secret='<auth0-client-secret>' \
+#     --from-literal=cookie-secret='<openssl-rand-base64-32>'
+#
+# See applications/oauth2-proxy/README.md for the matching Auth0 application setup.
+#
+# DO NOT commit a filled-in copy.
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: oauth2-proxy
+  namespace: oauth2-proxy
+type: Opaque
+stringData:
+  client-id: <secret>
+  client-secret: <secret>
+  cookie-secret: <secret>

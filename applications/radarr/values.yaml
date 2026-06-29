@@ -5,7 +5,6 @@ image:
   pullPolicy: Always
 
 volumes:
-
   config:
     source: "/mnt/data/radarr/config"
     dest: "/config"
@@ -26,7 +25,6 @@ volumes:
     source: "/red/Movies"
     dest: "/movies"
 
-
 environment:
   - name: PUID
     value: "120"
@@ -45,19 +43,8 @@ ingress:
     kubernetes.io/tls-acme: "true"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
   hosts:
-    - host: arendse.nom.za
-      tls: true
-      path: /radarr
-      service:
-        name: http
     - host: radarr.arendse.nom.za
       tls: true
       path: /
       service:
         name: http
-    - host: arendse.ddns.net
-      tls: true
-      path: /radarr
-      service:
-        name: http
-

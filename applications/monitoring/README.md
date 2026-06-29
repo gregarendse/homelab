@@ -48,11 +48,14 @@ kubectl -n monitoring rollout restart deploy/monitoring-grafana
 
 ### Auth0 application setup
 
-Create a **Regular Web Application** in the Auth0 tenant (`arendse.auth0.com`)
+> `<BASE_DOMAIN>` is your public base domain; `<AUTH0_DOMAIN>` is the Auth0 tenant
+> domain (e.g. `<tenant>.<region>.auth0.com`). Real values live in `values.yaml`.
+
+Create a **Regular Web Application** in the Auth0 tenant (`<AUTH0_DOMAIN>`)
 and configure:
 
-- **Allowed Callback URLs:** `https://grafana.arendse.nom.za/login/generic_oauth`
-- **Allowed Logout URLs:** `https://grafana.arendse.nom.za/login`
+- **Allowed Callback URLs:** `https://grafana.<BASE_DOMAIN>/login/generic_oauth`
+- **Allowed Logout URLs:** `https://grafana.<BASE_DOMAIN>/login`
 - **Allow Offline Access** (on the API): required because
   `use_refresh_token: true` / the `offline_access` scope are enabled in
   `values.yaml`.

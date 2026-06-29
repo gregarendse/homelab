@@ -1,40 +1,28 @@
 # $ docker run --pull=always --restart=unless-stopped -d -p 5006:5006 -v YOUR/PATH/TO/DATA:/data --name my_actual_budget actualbudget/actual-server:latest
 ---
 image:
-    repository: actualbudget/actual-server
+  repository: actualbudget/actual-server
 
 volumes:
-    data:
-        source: "/mnt/data/actual/data"
-        dest: "/data"
+  data:
+    source: "/mnt/data/actual/data"
+    dest: "/data"
 
 environment:
-    - name: TZ
-      value: Africa/Johannaesburg
+  - name: TZ
+    value: Africa/Johannaesburg
 
 ports:
-    http:
-        target: 5006
-        protocol: TCP
+  http:
+    target: 5006
+    protocol: TCP
 
 ingress:
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
   hosts:
-    - host: arendse.nom.za
-      tls: true
-      path: /actual
-      service:
-        name: http
-
     - host: actual.arendse.nom.za
       tls: true
       path: /
-      service:
-        name: http
-
-    - host: arendse.ddns.net
-      tls: true
-      path: /actual
       service:
         name: http

@@ -21,9 +21,16 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true
-  source:
-    repoURL: https://grafana.github.io/helm-charts
-    targetRevision: 6.27.0
-    chart: loki
-    helm:
-      releaseName: loki
+  # Multi-source: chart from the upstream Helm repo, values from this Git repo
+  # (referenced via the $values ref).
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      targetRevision: 6.27.0
+      chart: loki
+      helm:
+        releaseName: loki
+        valueFiles:
+          - $values/applications/loki/values.yaml
+    - repoURL: https://github.com/gregarendse/homelab.git
+      targetRevision: master
+      ref: values

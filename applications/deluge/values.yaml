@@ -1,57 +1,45 @@
 image:
-    repository: linuxserver/deluge
-    # Overrides the image tag whose default is the chart appVersion.
-    # tag: "develop"
-    pullPolicy: Always
+  repository: linuxserver/deluge
+  # Overrides the image tag whose default is the chart appVersion.
+  # tag: "develop"
+  pullPolicy: Always
 
 volumes:
-    config:
-        source: "/mnt/data/deluge/config"
-        dest: "/config"
+  config:
+    source: "/mnt/data/deluge/config"
+    dest: "/config"
 
-    downloads:
-        source: /red/downloads
-        dest: /downloads
+  downloads:
+    source: /red/downloads
+    dest: /downloads
 
 environment:
-    - name: PUID
-      value: "116"
-    - name: "PGID" 
-      value: "119"
-    - name: TZ
-      value: Africa/Johannaesburg
+  - name: PUID
+    value: "116"
+  - name: "PGID"
+    value: "119"
+  - name: TZ
+    value: Africa/Johannaesburg
 
 ports:
-    http:
-        target: 8112
-        protocol: TCP
+  http:
+    target: 8112
+    protocol: TCP
 
-    torrent-tcp:
-        target: 6881
-        protocol: TCP
+  torrent-tcp:
+    target: 6881
+    protocol: TCP
 
-    torrent-udp:
-        target: 6881
-        protocol: UDP
+  torrent-udp:
+    target: 6881
+    protocol: UDP
 
 ingress:
-  # annotations: {}
-#     kubernetes.io/ingress.class: public
-#     kubernetes.io/tls-acme: "true"
-#     cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
   hosts:
     - host: deluge.arendse.nom.za
       tls: true
       path: /
-      service:
-        name: http
-    - host: arendse.nom.za
-      tls: true
-      path: /deluge
-      service:
-        name: http
-    - host: arendse.ddns.net
-      tls: true
-      path: /deluge
       service:
         name: http

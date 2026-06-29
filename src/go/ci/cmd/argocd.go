@@ -118,12 +118,28 @@ spec:
         - {{ .ValueFiles }}
 {{- end }}
 {{- else if eq .HelmKind "remote" }}
+{{- if .ValueFiles }}
+  # Multi-source: chart from the upstream Helm repo, values from this Git repo
+  # (referenced via the $values ref).
+  sources:
+    - repoURL: {{ .HelmRepoURL }}
+      targetRevision: {{ .HelmTargetRevision }}
+      chart: {{ .Chart }}
+      helm:
+        releaseName: {{ .ReleaseName }}
+        valueFiles:
+          - $values/{{ .ValueFiles }}
+    - repoURL: {{ .RepoURL }}
+      targetRevision: {{ .TargetRevision }}
+      ref: values
+{{- else }}
   source:
     repoURL: {{ .HelmRepoURL }}
     targetRevision: {{ .HelmTargetRevision }}
     chart: {{ .Chart }}
     helm:
       releaseName: {{ .ReleaseName }}
+{{- end }}
 {{- end }}
 `))
 
@@ -154,6 +170,12 @@ func appToData(a app, cluster string, repoURL, targetRevision, argoNamespace, ar
 			d.Chart = a.Helm.Chart
 			d.HelmRepoURL = a.Helm.RepoURL
 			d.HelmTargetRevision = a.Helm.TargetRevision
+			if len(a.Helm.ValueFiles) > 1 {
+				return d, fmt.Errorf("app %s: multiple valueFiles not supported, got %d", a.Name, len(a.Helm.ValueFiles))
+			}
+			if len(a.Helm.ValueFiles) == 1 {
+				d.ValueFiles = a.Helm.ValueFiles[0]
+			}
 		}
 	}
 	return d, nil

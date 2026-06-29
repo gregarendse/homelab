@@ -1,0 +1,33 @@
+# Let's Encrypt production ClusterIssuer for the trinity cluster.
+#
+# IMPORTANT: trinity serves ingress through ingress-nginx (IngressClass `public`),
+# NOT Traefik. The HTTP-01 solver below MUST target `public`, otherwise
+# cert-manager creates the ACME challenge Ingress with the wrong class, nginx
+# never routes /.well-known/acme-challenge/..., and certificate issuance fails for
+# any new host (existing hosts keep working only because their cert is already in
+# a Secret).
+#
+# Note: the host's DNS record must reach the origin for HTTP-01 to succeed. If the
+# record is Cloudflare-proxied, "Always Use HTTPS" 308-redirects the :80 challenge
+# to HTTPS before it reaches nginx — set the record to DNS-only (grey cloud) so the
+# challenge hits the origin directly.
+#
+# Set `email` to your ACME account email. If you already have a working
+# letsencrypt-prod account on this cluster, keep `privateKeySecretRef.name` the
+# same as the existing issuer so the account isn't re-registered:
+#   kubectl get clusterissuer letsencrypt-prod -o jsonpath='{.spec.acme.privateKeySecretRef.name}'
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: greg.arendse@gmail.com
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - http01:
+          ingress:
+            # Use trinity's nginx IngressClass (was incorrectly `traefik`).
+            ingressClassName: public

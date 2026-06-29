@@ -1,4 +1,4 @@
-{{- if .Values.ingress }}
+{{- if and .Values.ingress .Values.ingress.hosts }}
 {{ $root := . }}
 ---
 apiVersion: networking.k8s.io/v1
@@ -9,9 +9,19 @@ metadata:
   labels:
     {{- include "server.labels" $root | nindent 4 }}
 
-  {{- with $root.Values.ingress.annotations }}
+  {{- $auth := $root.Values.ingress.auth | default dict }}
+  {{- if or (and $auth.enabled $auth.host) $root.Values.ingress.annotations }}
   annotations:
+    {{- if and $auth.enabled $auth.host }}
+    # Forward-auth via oauth2-proxy (Auth0 SSO). Injected by the chart for every
+    # app with ingress.hosts; opt out with ingress.auth.enabled=false. In-cluster
+    # callers bypass the ingress and are unaffected.
+    nginx.ingress.kubernetes.io/auth-url: "https://{{ $auth.host }}/oauth2/auth"
+    nginx.ingress.kubernetes.io/auth-signin: "https://{{ $auth.host }}/oauth2/start?rd=$scheme://$host$escaped_request_uri"
+    {{- end }}
+    {{- with $root.Values.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
+    {{- end }}
   {{- end }}
 spec:
 

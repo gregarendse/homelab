@@ -1,70 +1,59 @@
 ---
 image:
-    repository: lscr.io/linuxserver/sonarr
-    # Overrides the image tag whose default is the chart appVersion.
-    pullPolicy: Always
+  repository: lscr.io/linuxserver/sonarr
+  # Overrides the image tag whose default is the chart appVersion.
+  pullPolicy: Always
 
 volumes:
-    config:
-        source: "/mnt/data/sonarr/config"
-        dest: "/config"
-    scripts:
-        source: "/mnt/data/sonarr/scripts"
-        dest: "/scripts"
+  config:
+    source: "/mnt/data/sonarr/config"
+    dest: "/config"
+  scripts:
+    source: "/mnt/data/sonarr/scripts"
+    dest: "/scripts"
 
-    downloads:
-        source: "/red/downloads"
-        dest: "/downloads"
-    reddownloads:
-        source: "/red/downloads"
-        dest: "/red/downloads"
+  downloads:
+    source: "/red/downloads"
+    dest: "/downloads"
+  reddownloads:
+    source: "/red/downloads"
+    dest: "/red/downloads"
 
-    blackhole:
-        source: "/red/blackhole"
-        dest: "/blackhole"
-    redblackhole:
-        source: "/red/blackhole"
-        dest: "/red/blackhole"
+  blackhole:
+    source: "/red/blackhole"
+    dest: "/blackhole"
+  redblackhole:
+    source: "/red/blackhole"
+    dest: "/red/blackhole"
 
-    mega-blackhole:
-        source: "/red/mega/blackhole"
-        dest: "/red/mega/blackhole"
+  mega-blackhole:
+    source: "/red/mega/blackhole"
+    dest: "/red/mega/blackhole"
 
-    movies:
-        source: "/red/TV Shows"
-        dest: "/media/red_one/TV Shows"
+  movies:
+    source: "/red/TV Shows"
+    dest: "/media/red_one/TV Shows"
 
 environment:
-    - name: PUID
-      value: "117"
-    - name: "PGID" 
-      value: "119"
-    - name: TZ
-      value: Africa/Johannaesburg
+  - name: PUID
+    value: "117"
+  - name: "PGID"
+    value: "119"
+  - name: TZ
+    value: Africa/Johannaesburg
 
 ports:
-    http:
-        target: 8989
-        protocol: TCP
+  http:
+    target: 8989
+    protocol: TCP
 
 ingress:
   annotations:
     kubernetes.io/tls-acme: "true"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
   hosts:
-    - host: arendse.nom.za
-      tls: true
-      path: /sonarr
-      service:
-        name: http
     - host: sonarr.arendse.nom.za
       tls: true
       path: /
       service:
         name: http
-    - host: arendse.ddns.net
-      tls: true
-      path: /sonarr
-      service:
-        name: http
-

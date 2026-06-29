@@ -1,0 +1,75 @@
+---
+# oauth2-proxy — central forward-auth gateway in front of the *arr apps.
+#
+# ingress-nginx calls this proxy's /oauth2/auth on every request to a protected
+# app (via the auth-url/auth-signin annotations on each app's Ingress). The
+# proxy authenticates users against Auth0 (OIDC) and sets a session cookie
+# scoped to *.arendse.nom.za so a single login covers all protected apps.
+#
+# Sensitive values (client id/secret, cookie secret) are NOT set here. They are
+# injected from the externally-managed `oauth2-proxy` Secret via existingSecret
+# below. See applications/oauth2-proxy/README.md for the create commands and the
+# matching Auth0 application setup.
+
+config:
+  # Pull client-id, client-secret and cookie-secret from this pre-created Secret
+  # instead of templating them into a chart-managed Secret (keeps them out of
+  # Git and out of Helm/Argo's managed objects).
+  existingSecret: oauth2-proxy
+
+extraArgs:
+  provider: oidc
+  oidc-issuer-url: https://arendse.uk.auth0.com/
+  # The proxy runs on its own hostname; ingress-nginx redirects unauthenticated
+  # users here, and Auth0 redirects back to <this host>/oauth2/callback.
+  redirect-url: https://auth.arendse.nom.za/oauth2/callback
+
+  # Cookie scoped to the parent domain so one login is shared by every
+  # *.arendse.nom.za app behind the proxy (sonarr, and later radarr/prowlarr…).
+  cookie-domain: .arendse.nom.za
+  # Restrict cookie/redirects to our domain to prevent open-redirect abuse.
+  whitelist-domain: .arendse.nom.za
+
+  # "Lock down everything": only these emails may pass. Auth0 still does the
+  # actual authentication; this is the coarse allow-list on top.
+  # Adjust/extend as you onboard more users.
+  email-domain: "*"
+  authenticated-emails-file: ""
+
+  # Standard OIDC scopes; email is used for the allow-list above.
+  scope: openid profile email
+
+  # Pass identity to upstreams (the *arr apps ignore these, but harmless and
+  # useful if a future upstream wants them).
+  set-xauthrequest: "true"
+  pass-access-token: "true"
+
+  # Listen on all interfaces inside the pod.
+  http-address: 0.0.0.0:4180
+
+# Single replica is fine for a home lab. With >1 replica you'd need a shared
+# session store (redis) — intentionally left disabled.
+replicaCount: 1
+
+sessionStorage:
+  type: cookie
+
+redis:
+  enabled: false
+
+# The proxy needs to be reachable both by ingress-nginx (for the /oauth2/auth
+# subrequest) and by the browser (for the login redirect to /oauth2/start).
+ingress:
+  enabled: true
+  className: public
+  annotations:
+    kubernetes.io/tls-acme: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - auth.arendse.nom.za
+  path: /oauth2
+  pathType: Prefix
+  tls:
+    - secretName: oauth2-proxy-tls
+      hosts:
+        - auth.arendse.nom.za

@@ -42,13 +42,23 @@ environment:
 # dest: ""
 service:
   type: ClusterIP
-ports:
-  {}
+ports: {}
   # http:
   #     target: 80
   #     protocol: TCP
 
 ingress:
+  # Forward-auth via oauth2-proxy (Auth0 SSO). Applied automatically to every app
+  # that defines `ingress.hosts` — no per-app annotations needed. The auth host is
+  # defined here once so the domain isn't repeated across app values.
+  #
+  # Opt a single app out (e.g. internal-only or apps with native auth) with:
+  #   ingress:
+  #     auth:
+  #       enabled: false
+  auth:
+    enabled: true
+    host: auth.arendse.nom.za
   # {}
   # annotations: {}
   #     kubernetes.io/ingress.class: public
@@ -71,8 +81,7 @@ ingress:
   #    hosts:
   #      - chart-example.local
 
-resources:
-  {}
+resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
   # resources, such as Minikube. If you do want to specify resources, uncomment the following

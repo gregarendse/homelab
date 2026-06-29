@@ -1,18 +1,18 @@
 # GENERATED FILE - DO NOT EDIT
-# Source: clusters/oci/apps.yaml
+# Source: clusters/trinity/apps.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: oci-monitoring
+  name: trinity-oauth2-proxy
   namespace: argocd
   labels:
-    homelab.gregarendse/cluster: "oci"
-    homelab.gregarendse/app: "monitoring"
+    homelab.gregarendse/cluster: "trinity"
+    homelab.gregarendse/app: "oauth2-proxy"
 spec:
   project: default
   destination:
     server: https://kubernetes.default.svc
-    namespace: monitoring
+    namespace: oauth2-proxy
   # syncPolicy:
   #   automated:
   #     prune: true
@@ -24,13 +24,13 @@ spec:
   # Multi-source: chart from the upstream Helm repo, values from this Git repo
   # (referenced via the $values ref).
   sources:
-    - repoURL: https://prometheus-community.github.io/helm-charts
-      targetRevision: 69.0.0
-      chart: kube-prometheus-stack
+    - repoURL: https://oauth2-proxy.github.io/manifests
+      targetRevision: 10.7.0
+      chart: oauth2-proxy
       helm:
-        releaseName: monitoring
+        releaseName: oauth2-proxy
         valueFiles:
-          - $values/applications/monitoring/values.yaml
+          - $values/applications/oauth2-proxy/values.yaml
     - repoURL: https://github.com/gregarendse/homelab.git
       targetRevision: master
       ref: values

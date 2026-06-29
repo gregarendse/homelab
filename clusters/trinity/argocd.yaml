@@ -1,0 +1,65 @@
+# Argo CD Helm values for the trinity (home-lab) cluster.
+#
+# Mirrors infrastructure/kubernetes/argocd.yaml (the OCI install) but adapted for
+# trinity, which uses ingress-nginx (class `public`) instead of Traefik.
+#
+# Chart: https://github.com/argoproj/argo-helm/tree/main/charts/argo-cd
+
+configs:
+  params:
+    # Terminate TLS at ingress-nginx and talk plain HTTP to the argocd-server
+    # pod (avoids the double-TLS / redirect-loop issue behind a TLS-terminating
+    # ingress).
+    server.insecure: true
+
+  cm:
+    # Public base URL — required so OIDC redirect/callback URLs are correct.
+    url: https://trinity.argocd.arendse.nom.za
+    # Native OIDC against Auth0 (same IdP as Grafana / oauth2-proxy). ArgoCD speaks
+    # OIDC directly — it is NOT put behind oauth2-proxy, so the CLI/API/gRPC keep
+    # working and we get role mapping.
+    #
+    # clientID/clientSecret are pulled from the externally-managed `argocd-auth0`
+    # Secret (kept out of Git). That Secret MUST carry the label
+    # `app.kubernetes.io/part-of: argocd` for these `$name:key` refs to resolve.
+    oidc.config: |
+      name: Auth0
+      issuer: https://arendse.uk.auth0.com/
+      clientID: $argocd-auth0:clientID
+      clientSecret: $argocd-auth0:clientSecret
+      requestedScopes:
+        - openid
+        - profile
+        - email
+      requestedIDTokenClaims:
+        email:
+          essential: true
+
+  rbac:
+    # Match RBAC subjects on the email claim (Auth0 has no groups by default).
+    scopes: "[email]"
+    # Everyone authenticates via Auth0; only this email is admin, the rest get
+    # nothing unless added below.
+    policy.default: ""
+    policy.csv: |
+      g, greg.arendse@gmail.com, role:admin
+
+# Dex (Argo's bundled connector proxy) is not needed — Auth0 is wired in directly
+# via configs.cm.oidc.config above.
+dex:
+  enabled: false
+
+notifications:
+  enabled: false
+
+server:
+  ingress:
+    enabled: true
+    ingressClassName: public
+    hostname: trinity.argocd.arendse.nom.za
+    tls: true
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      kubernetes.io/tls-acme: "true"
+      # Plain HTTP to the backend (paired with server.insecure above).
+      nginx.ingress.kubernetes.io/backend-protocol: HTTP

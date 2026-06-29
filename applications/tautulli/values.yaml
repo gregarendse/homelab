@@ -1,45 +1,33 @@
 image:
-    repository: lscr.io/linuxserver/tautulli
-    # Overrides the image tag whose default is the chart appVersion.
-    tag: "latest"
-    pullPolicy: Always
+  repository: lscr.io/linuxserver/tautulli
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+  pullPolicy: Always
 
 volumes:
-    config:
-        source: "/mnt/data/tautulli/config"
-        dest: "/config"
+  config:
+    source: "/mnt/data/tautulli/config"
+    dest: "/config"
 
 environment:
-    - name: PUID
-      value: "121"
-    - name: "PGID" 
-      value: "125"
-    - name: TZ
-      value: Africa/Johannaesburg
+  - name: PUID
+    value: "121"
+  - name: "PGID"
+    value: "125"
+  - name: TZ
+    value: Africa/Johannaesburg
 
 ports:
-    http:
-        target: 8181
-        protocol: TCP
+  http:
+    target: 8181
+    protocol: TCP
 
 ingress:
   annotations:
-#     kubernetes.io/ingress.class: public
-#     kubernetes.io/tls-acme: "true"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
   hosts:
-    - host: arendse.ddns.net
-      tls: true
-      path: /tautulli
-      service:
-        name: http
     - host: tautulli.arendse.nom.za
       tls: true
       path: /
-      service:
-        name: http
-    - host: arendse.nom.za
-      tls: true
-      path: /tautulli
       service:
         name: http

@@ -1,49 +1,36 @@
 ---
 image:
-    repository: linuxserver/sabnzbd
-    # Overrides the image tag whose default is the chart appVersion.
-    pullPolicy: Always
+  repository: linuxserver/sabnzbd
+  # Overrides the image tag whose default is the chart appVersion.
+  pullPolicy: Always
 
 volumes:
-    config:
-        source: "/mnt/data/sabnzbd/config"
-        dest: "/config"
-    downloads:
-        source: "/red/downloads"
-        dest: "/red/downloads"
+  config:
+    source: "/mnt/data/sabnzbd/config"
+    dest: "/config"
+  downloads:
+    source: "/red/downloads"
+    dest: "/red/downloads"
 
 environment:
-    - name: PUID
-      value: "118"
-    - name: "PGID" 
-      value: "119"
-    - name: TZ
-      value: Africa/Johannaesburg
+  - name: PUID
+    value: "118"
+  - name: "PGID"
+    value: "119"
+  - name: TZ
+    value: Africa/Johannaesburg
 
 ports:
-    http:
-        target: 8080
-        protocol: TCP
+  http:
+    target: 8080
+    protocol: TCP
 
 ingress:
   annotations:
-#     kubernetes.io/ingress.class: public
-#     kubernetes.io/tls-acme: "true"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
   hosts:
-    - host: arendse.nom.za
-      tls: true
-      path: /sabnzbd
-      service:
-        name: http
     - host: sabnzbd.arendse.nom.za
       tls: true
       path: /
       service:
         name: http
-    - host: arendse.ddns.net
-      tls: true
-      path: /sabnzbd
-      service:
-        name: http
-

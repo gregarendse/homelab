@@ -112,6 +112,17 @@ apps:
       targetRevision: 4.13.2
       releaseName: ingress-nginx
 
+  - name: oauth2-proxy
+    type: helm
+    namespace: oauth2-proxy
+    helm:
+      kind: remote
+      repoURL: https://oauth2-proxy.github.io/manifests
+      chart: oauth2-proxy
+      targetRevision: 10.7.0
+      releaseName: oauth2-proxy
+      valueFiles:
+        - applications/oauth2-proxy/values.yaml
 
 #      ToDo: enroll
 #  - name: vertical-pod-autoscaler
