@@ -21,9 +21,16 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true
-  source:
-    repoURL: https://kubernetes.github.io/ingress-nginx
-    targetRevision: 4.13.2
-    chart: ingress-nginx
-    helm:
-      releaseName: ingress-nginx
+  # Multi-source: chart from the upstream Helm repo, values from this Git repo
+  # (referenced via the $values ref).
+  sources:
+    - repoURL: https://kubernetes.github.io/ingress-nginx
+      targetRevision: 4.13.2
+      chart: ingress-nginx
+      helm:
+        releaseName: ingress-nginx
+        valueFiles:
+          - $values/applications/nginx/values.yaml
+    - repoURL: https://github.com/gregarendse/homelab.git
+      targetRevision: master
+      ref: values

@@ -111,6 +111,8 @@ apps:
       chart: ingress-nginx
       targetRevision: 4.13.2
       releaseName: ingress-nginx
+      valueFiles:
+        - applications/nginx/values.yaml
 
   - name: oauth2-proxy
     type: helm
