@@ -23,7 +23,11 @@ type app struct {
 	Type      string `yaml:"type"`
 	Namespace string `yaml:"namespace"`
 	Path      string `yaml:"path"`
-	Helm      *helm  `yaml:"helm,omitempty"`
+	// AutoSync overrides the cluster-level autoSync default for this app.
+	// Unset = inherit the inventory default; set explicitly to opt a single app
+	// in or out (e.g. autoSync: false to pause reconciliation if it misbehaves).
+	AutoSync *bool `yaml:"autoSync,omitempty"`
+	Helm     *helm `yaml:"helm,omitempty"`
 }
 
 type helm struct {
@@ -55,6 +59,13 @@ func (a app) GetChartPath() string {
 		return a.Helm.Path
 	}
 	return "server"
+}
+
+func (a app) EffectiveAutoSync(clusterDefault bool) bool {
+	if a.AutoSync != nil {
+		return *a.AutoSync
+	}
+	return clusterDefault
 }
 
 // --- Application generation ---
@@ -248,7 +259,7 @@ var argocdGenerateCmd = &cobra.Command{
 				return err
 			}
 			for _, a := range inv.Apps {
-				d, err := appToData(a, cluster, argocdRepoURL, argocdTargetRevision, argocdArgoNamespace, argocdArgoProject, inv.AutoSync)
+				d, err := appToData(a, cluster, argocdRepoURL, argocdTargetRevision, argocdArgoNamespace, argocdArgoProject, a.EffectiveAutoSync(inv.AutoSync))
 				if err != nil {
 					return err
 				}

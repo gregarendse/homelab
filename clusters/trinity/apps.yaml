@@ -1,5 +1,6 @@
-# autoSync enables ArgoCD automated sync (prune + selfHeal) for every generated
-# app in this cluster. Leave unset/false to require manual syncs.
+# autoSync enables ArgoCD automated sync (prune + selfHeal) by default for every
+# app in this cluster. Disable it for a single app with `autoSync: false` on that
+# app (e.g. to pause reconciliation while debugging); re-enable with `true`.
 autoSync: true
 apps:
   # In-repo "server" Helm chart releases (values live under applications/<app>/values.yaml)
