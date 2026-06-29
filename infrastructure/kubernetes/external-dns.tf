@@ -23,7 +23,7 @@ resource "helm_release" "external_dns" {
   atomic           = true
   cleanup_on_fail  = true
   create_namespace = false
-  force_update = true
+  force_update     = true
 
   values = [
     yamlencode({
@@ -36,7 +36,7 @@ resource "helm_release" "external_dns" {
           name = "CF_API_TOKEN"
           valueFrom = {
             secretKeyRef = {
-              name = "cloudflare-credentials"  # Must be created manually - see EXTERNAL_DNS.md
+              name = "cloudflare-credentials" # Must be created manually - see EXTERNAL_DNS.md
               key  = "cloudflare-api-token"
             }
           }
@@ -44,9 +44,9 @@ resource "helm_release" "external_dns" {
       ]
 
       # Prefer chart-native values and keep extraArgs only for provider-specific flags.
-      registry    = "txt"
-      txtOwnerId  = "external-dns-${var.domain_name}"
-      txtPrefix   = "external-dns-"
+      registry      = "txt"
+      txtOwnerId    = "external-dns-${var.domain_name}"
+      txtPrefix     = "external-dns-"
       domainFilters = [var.domain_name]
 
       # Per-record proxying is controlled via the ingress annotation:
@@ -82,7 +82,7 @@ resource "helm_release" "external_dns" {
       sources = ["ingress"]
 
       # Policy for managing DNS records
-      policy = "sync"  # sync, upsert-only
+      policy = "sync" # sync, upsert-only
 
       # Metrics
       metrics = {

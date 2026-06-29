@@ -14,6 +14,14 @@ resource "helm_release" "longhorn" {
       name  = "defaultSettings.defaultReplicaCount"
       value = "\"1\""
     },
+    # Single-node cluster: make the default `longhorn` StorageClass provision
+    # 1 replica so volumes don't sit permanently degraded (the chart otherwise
+    # bakes numberOfReplicas=3 into the default class, overriding the setting
+    # above for any PVC using it).
+    {
+      name  = "persistence.defaultClassReplicaCount"
+      value = "1"
+    },
     # NOTE (2026-06-19) — backup-store poll interval is a known loose end.
     # It is currently set to 3h DIRECTLY on the live BackupTarget CR via
     #   kubectl -n longhorn-system patch backuptargets.longhorn.io default \
@@ -52,31 +60,6 @@ locals {
   # longhorn-backup-secret.example.yaml) so the B2 keys never enter Terraform
   # state. Terraform only references it by name.
   longhorn_backup_secret_name = "longhorn-backup-b2"
-}
-
-# Single-replica StorageClass for volumes that don't need Longhorn redundancy.
-# The cluster is single-node, so anything requesting >1 replica sits permanently
-# degraded (anti-affinity can't place replicas on a second node). The built-in
-# `longhorn` class carries numberOfReplicas=3, so charts that pin to it (loki,
-# grafana, prometheus) need this class to stay healthy.
-resource "kubernetes_manifest" "longhorn_r1_storageclass" {
-  manifest = {
-    apiVersion = "storage.k8s.io/v1"
-    kind       = "StorageClass"
-    metadata = {
-      name = "longhorn-r1"
-    }
-    provisioner          = "driver.longhorn.io"
-    allowVolumeExpansion = true
-    reclaimPolicy        = "Delete"
-    volumeBindingMode    = "Immediate"
-    parameters = {
-      numberOfReplicas    = "1"
-      staleReplicaTimeout = "30"
-    }
-  }
-
-  depends_on = [helm_release.longhorn]
 }
 
 # Backups are staggered across the week to stay under Backblaze B2's free-tier

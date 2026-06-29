@@ -37,6 +37,9 @@ data "terraform_remote_state" "storage" {
 resource "kubernetes_namespace" "loki" {
   metadata {
     name = "loki"
+    labels = {
+      "name" = "loki"
+    }
   }
 }
 
