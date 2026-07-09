@@ -1,3 +1,4 @@
+autoSync: true
 apps:
   # In-repo "server" Helm chart releases (values live under applications/<app>/values.yaml)
   - name: echo
