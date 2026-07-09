@@ -71,7 +71,7 @@
               containers = [
                 {
                   name = "pihole";
-                  image = "pihole/pihole:2026.04.1";
+                  image = "pihole/pihole:2026.07.2";
                   ports = [
                     {
                       name = "dns-tcp";
