@@ -31,18 +31,6 @@
         };
       };
 
-      # Secret for Pi-hole admin password
-      secrets.pihole-secret = {
-        metadata = {
-          name = "pihole-secret";
-          namespace = "pihole";
-        };
-        type = "Opaque";
-        stringData = {
-          password = "admin123"; # Change this to your desired password
-        };
-      };
-
       # PersistentVolumeClaim for Pi-hole data
       persistentVolumeClaims.pihole-data = {
         metadata = {
@@ -83,7 +71,7 @@
               containers = [
                 {
                   name = "pihole";
-                  image = "pihole/pihole:2026.04.1";
+                  image = "pihole/pihole:2026.07.2";
                   ports = [
                     {
                       name = "dns-tcp";
@@ -120,6 +108,13 @@
                     {
                       name = "TZ";
                       value = "Europe/London";
+                    }
+                    {
+                      name = "FTLCONF_webserver_api_password";
+                      valueFrom.secretKeyRef = {
+                        name = "pihole-secret";
+                        key = "password";
+                      };
                     }
                   ];
                   volumeMounts = [
