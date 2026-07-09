@@ -1,0 +1,92 @@
+name: validate-manifests
+
+# Validates Kubernetes manifests on every pull request:
+#   * Helm: lints the shared server/ chart and renders every path-type Helm app
+#     from clusters/*/apps.yaml, then schema-checks the output with kubeconform.
+#   * Nix/kubenix: builds each applications/<app> that has a flake.nix and
+#     schema-checks the rendered manifests with kubeconform.
+#
+# These checks catch malformed templates, bad value overrides, and manifests
+# that don't match the Kubernetes API schema — failures that previously only
+# surfaced at deploy time.
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - "server/**"
+      - "applications/**"
+      - "clusters/*/apps.yaml"
+      - "scripts/validate-helm.sh"
+      - "scripts/validate-manifests.sh"
+      - ".github/workflows/validate-manifests.yaml"
+
+concurrency:
+  group: validate-manifests-${{ github.head_ref }}
+  cancel-in-progress: true
+
+env:
+  # Validate against the cluster's Kubernetes version (kubenix apps target 1.28).
+  KUBE_VERSION: "1.28.0"
+  KUBECONFORM_VERSION: "v0.7.0"
+  YQ_VERSION: "v4.44.6"
+
+jobs:
+  helm:
+    name: helm charts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.3
+
+      - name: Install yq and kubeconform
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo curl -fsSL \
+            "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64" \
+            -o /usr/local/bin/yq
+          sudo chmod +x /usr/local/bin/yq
+          curl -fsSL \
+            "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin kubeconform
+          yq --version
+          kubeconform -v
+
+      - name: Validate Helm apps
+        run: scripts/validate-helm.sh
+
+  kubenix:
+    name: kubenix manifests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install yq and kubeconform
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo curl -fsSL \
+            "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64" \
+            -o /usr/local/bin/yq
+          sudo chmod +x /usr/local/bin/yq
+          curl -fsSL \
+            "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin kubeconform
+          yq --version
+          kubeconform -v
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v22
+
+      - name: Enable Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v14
+
+      # result.json files are gitignored, so build each kubenix app fresh
+      # before validating its rendered manifests.
+      - name: Validate kubenix manifests
+        run: scripts/validate-manifests.sh --build
