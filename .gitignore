@@ -19,10 +19,10 @@
 secret.yml
 secret.yaml
 # Dotfile secret manifests (e.g. applications/<app>/.secret.yaml) — never commit
-.secret.yml
-.secret.yaml
-*.secret.yaml
-*.secret.yml
+.secret*.yml
+.secret*.yaml
+*.secret*.yaml
+*.secret*.yml
 # Filled-in Longhorn backup credentials (the .example.yaml template is committed)
 longhorn-backup-secret.yaml
 # Filled-in Grafana admin credentials (the .example.yaml template is committed)
