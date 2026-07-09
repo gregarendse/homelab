@@ -78,13 +78,17 @@ apps:
   #      releaseName: vertical-pod-autoscaler
 
   # Rendered (kubenix/Nix) apps -> CI renders to dist/oci/<app> and Argo applies YAML from there
-  - name: pihole
+  - name: hermes
     type: rendered
-    path: applications/pihole
+    path: applications/hermes
 
   - name: home-assistant
     type: rendered
     path: applications/home-assistant
+
+  - name: pihole
+    type: rendered
+    path: applications/pihole
 
   - name: mongo
     type: rendered
