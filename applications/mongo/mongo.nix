@@ -6,7 +6,49 @@
     version = "1.28";
 
     resources = {
-      namespaces.mongo = { };
+      namespaces.mongo = {
+        metadata.labels.name = "mongo";
+      };
+
+      # Restrict MongoDB access to the unifi app and same-namespace pods only.
+      networkPolicies.mongo = {
+        metadata = {
+          name = "mongo";
+          namespace = "mongo";
+        };
+        spec = {
+          podSelector = {
+            matchLabels = {
+              app = "mongo";
+            };
+          };
+          policyTypes = [ "Ingress" "Egress" ];
+          ingress = [
+            {
+              from = [
+                {
+                  namespaceSelector = {
+                    matchLabels = {
+                      name = "unifi";
+                    };
+                  };
+                }
+                {
+                  podSelector = { }; # Allow from same namespace
+                }
+              ];
+              ports = [
+                {
+                  port = 27017;
+                  protocol = "TCP";
+                }
+              ];
+            }
+          ];
+          # MongoDB does not need to initiate any outbound connections.
+          egress = [ ];
+        };
+      };
 
       configMaps."unifi" = {
         metadata = {
@@ -37,6 +79,12 @@
               app = "mongo";
             };
             spec = {
+              # Enforce non-root execution and a restricted seccomp profile.
+              securityContext = {
+                fsGroup = 999;
+                runAsNonRoot = true;
+                seccompProfile.type = "RuntimeDefault";
+              };
               volumes = [
                 {
                   name = "init-script";
@@ -55,6 +103,24 @@
                 {
                   name = "mongo";
                   image = "mongo:8";
+                  # Drop all capabilities and prevent privilege escalation.
+                  securityContext = {
+                    runAsUser = 999;
+                    runAsGroup = 999;
+                    allowPrivilegeEscalation = false;
+                    capabilities.drop = [ "ALL" ];
+                  };
+                  # Set resource limits to prevent DoS via resource exhaustion.
+                  resources = {
+                    requests = {
+                      cpu = "100m";
+                      memory = "256Mi";
+                    };
+                    limits = {
+                      cpu = "500m";
+                      memory = "512Mi";
+                    };
+                  };
                   ports = [
                     {
                       name = "mongo";

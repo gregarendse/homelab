@@ -21,7 +21,9 @@
     ];
 
     resources = {
-      namespaces.unifi = { };
+      namespaces.unifi = {
+        metadata.labels.name = "unifi";
+      };
 
       persistentVolumeClaims."unifi-controller-data" = {
         metadata = {
