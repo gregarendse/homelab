@@ -23,9 +23,8 @@ echo "User: ${user}"
 
 [[ ! -d "applications/${application}" ]] && help
 
-if [ ! -d "/mnt/data/${application}" ];
-then
+if [ ! -d "/mnt/data/${application}" ]; then
     echo "No 'home' directory"
 fi
 
-helm upgrade --install "${application}" server --values="applications/${application}/values.yaml" --namespace="${application}" --create-namespace --atomic
+helm upgrade --install "${application}" server --values="applications/${application}/values.yaml" --namespace="${application}" --create-namespace --rollback-on-failure

@@ -37,13 +37,15 @@ week so any single night only backs up 1-2 volumes. This keeps B2 Class B
 (`<day>-backup`) live in `infrastructure/kubernetes/longhorn.tf`, one per
 weekday at 02:00.
 
-A volume joins a day's cycle via the label
-`recurring-job-group.longhorn.io/<day>-backup: enabled` on its PVC. When you
-add a new PVC, assign it a weekday group so backups stay spread (aim for 1-2
-volumes per day) - otherwise it won't be backed up. Set the label durably where
-the PVC is defined (the `.nix` PVC / `volumeClaimTemplate` for kubenix apps, or
-the chart's PVC-labels field for Helm apps). Current split: Mon home-assistant,
-Tue mongo, Wed unifi, Thu pihole, Fri hermes, Sat grafana+prometheus, Sun loki.
+A volume joins a day's cycle via PVC labels. Longhorn only syncs PVC recurring
+job labels when the PVC is also marked as a recurring-job label source:
+`recurring-job.longhorn.io/source: enabled` plus
+`recurring-job-group.longhorn.io/<day>-backup: enabled`. When you add a new PVC,
+assign it a weekday group so backups stay spread (aim for 1-2 volumes per day) -
+otherwise it won't be backed up. Set the labels durably where the PVC is defined
+(the `.nix` PVC / `volumeClaimTemplate` for kubenix apps, or the chart's
+PVC-labels field for Helm apps). Current split: Mon home-assistant, Tue mongo,
+Wed unifi, Thu pihole, Fri hermes, Sat grafana+prometheus, Sun loki.
 
 ## What this repository is not
 

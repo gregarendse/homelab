@@ -31,6 +31,7 @@
           labels = {
             app = "hermes";
             # Longhorn backup cycle: Friday (staggered to spread B2 traffic)
+            "recurring-job.longhorn.io/source" = "enabled";
             "recurring-job-group.longhorn.io/friday-backup" = "enabled";
           };
         };
