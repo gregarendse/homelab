@@ -28,6 +28,7 @@
           name = "unifi-controller-data";
           namespace = "unifi";
           # Longhorn backup cycle: Wednesday (staggered to spread B2 traffic)
+          labels."recurring-job.longhorn.io/source" = "enabled";
           labels."recurring-job-group.longhorn.io/wednesday-backup" = "enabled";
         };
         spec = {

@@ -26,6 +26,7 @@
           name = "home-assistant-config";
           namespace = "home-assistant";
           # Longhorn backup cycle: Monday (staggered to spread B2 traffic)
+          labels."recurring-job.longhorn.io/source" = "enabled";
           labels."recurring-job-group.longhorn.io/monday-backup" = "enabled";
         };
         spec = {

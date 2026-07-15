@@ -37,6 +37,7 @@
           name = "pihole-data";
           namespace = "pihole";
           # Longhorn backup cycle: Thursday (staggered to spread B2 traffic)
+          labels."recurring-job.longhorn.io/source" = "enabled";
           labels."recurring-job-group.longhorn.io/thursday-backup" = "enabled";
         };
         spec = {
