@@ -1,0 +1,27 @@
+# TRaSH Guide Sync configuration for Recyclarr
+# Docs: https://trash-guides.info/Guide-Sync/
+
+radarr:
+  movies:
+    base_url: http://radarr.radarr.svc.cluster.local:7878
+    api_key: !env_var RADARR_API_KEY
+
+    include:
+      # TRaSH default movie quality profile sets
+      - template: radarr-quality-definition-movie
+      - template: radarr-custom-formats-hd-bluray-web
+      - template: radarr-custom-formats-uhd-bluray-web
+      - template: radarr-custom-formats-remux-web-1080p
+      - template: radarr-custom-formats-remux-web-2160p
+
+sonarr:
+  series:
+    base_url: http://sonarr.sonarr.svc.cluster.local:8989
+    api_key: !env_var SONARR_API_KEY
+
+    include:
+      # TRaSH default series profile sets
+      - template: sonarr-quality-definition-series
+      - template: sonarr-v4-custom-formats-web-1080p
+      - template: sonarr-v4-custom-formats-web-2160p
+      - template: sonarr-v4-custom-formats-anime

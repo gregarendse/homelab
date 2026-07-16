@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: recyclarr-sync
+  namespace: recyclarr
+spec:
+  schedule: "0 */6 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: recyclarr
+              image: ghcr.io/recyclarr/recyclarr:latest
+              imagePullPolicy: Always
+              args:
+                - sync
+                - --app-data
+                - /config
+                - --config-file
+                - /config/recyclarr.yml
+              env:
+                - name: TZ
+                  value: Africa/Johannaesburg
+                - name: RADARR_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: recyclarr-api-keys
+                      key: RADARR_API_KEY
+                - name: SONARR_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: recyclarr-api-keys
+                      key: SONARR_API_KEY
+              volumeMounts:
+                - name: config
+                  mountPath: /config
+          volumes:
+            - name: config
+              hostPath:
+                path: /mnt/data/recyclarr/config
+                type: Directory
