@@ -32,10 +32,19 @@ In practice, this means:
 ## Longhorn Backups (staggered)
 
 Volumes are backed up to Backblaze B2 once a week each, staggered across the
-week so any single night only backs up 1-2 volumes. This keeps B2 Class B
+week so any single night only backs up 1-2 volumes. This keeps B2 Class B/C
 (LIST/HEAD) transactions under the free-tier daily cap. Seven RecurringJobs
 (`<day>-backup`) live in `infrastructure/kubernetes/longhorn.tf`, one per
 weekday at 02:00.
+
+Watch **two** separate B2 free-tier limits: the daily transaction caps
+(2,500 Class B and 2,500 Class C) and the **10 GB stored-data cap**. Staggering
+addresses transactions; total stored backup size is bounded separately by which
+volumes we back up and by `retain`. Large, high-churn, reproducible volumes
+(Prometheus metrics, Loki logs) are deliberately **not** backed up to keep the
+stored total under 10 GB - Loki's logs already live in OCI Object Storage, and
+Prometheus metrics are reproducible. Removing a backup label only stops future
+backups; reclaim space by also deleting the existing backups from B2.
 
 A volume joins a day's cycle via PVC labels. Longhorn only syncs PVC recurring
 job labels when the PVC is also marked as a recurring-job label source:
@@ -45,7 +54,8 @@ assign it a weekday group so backups stay spread (aim for 1-2 volumes per day) -
 otherwise it won't be backed up. Set the labels durably where the PVC is defined
 (the `.nix` PVC / `volumeClaimTemplate` for kubenix apps, or the chart's
 PVC-labels field for Helm apps). Current split: Mon home-assistant, Tue mongo,
-Wed unifi, Thu pihole, Fri hermes, Sat grafana+prometheus, Sun loki.
+Wed unifi, Thu pihole, Fri hermes, Sat grafana. (Prometheus and Loki are
+intentionally excluded; see above.)
 
 ## What this repository is not
 
