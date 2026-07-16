@@ -4,11 +4,9 @@ prometheus:
     retentionSize: 10GB
     storageSpec:
       volumeClaimTemplate:
-        metadata:
-          labels:
-            # Longhorn backup cycle: Saturday (staggered to spread B2 traffic)
-            recurring-job.longhorn.io/source: enabled
-            recurring-job-group.longhorn.io/saturday-backup: enabled
+        # Not backed up to B2: Prometheus TSDB is large and high-churn, and its
+        # backups pushed total B2 storage past the free-tier 10 GB cap. Metrics
+        # are reproducible, so we skip offsite backup (no source/group label).
         spec:
           storageClassName: longhorn
           accessModes: ["ReadWriteOnce"]

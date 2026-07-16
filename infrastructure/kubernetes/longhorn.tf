@@ -34,9 +34,10 @@ resource "helm_release" "longhorn" {
       name  = "defaultBackupStore.backupTargetCredentialSecret"
       value = local.longhorn_backup_secret_name
     },
+    # Disable polling entirely (0) to avoid LIST/HEAD traffic exceeding B2's free-tier Class B cap.
     {
       name  = "defaultBackupStore.pollInterval"
-      value = "10800"
+      value = "0"
     }
   ]
 }
