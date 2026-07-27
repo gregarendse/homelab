@@ -54,17 +54,16 @@ loki:
 # NOTE: these must live under `singleBinary` (not `global`) because only the
 # per-component blocks are wired into the StatefulSet in this chart version.
 
-# Inject the OCI S3 credentials from the Secret as env vars and enable env
-# expansion in the Loki config. The loki-s3-secret Secret is created by Terraform
-# (infrastructure/kubernetes/loki.tf). See applications/loki/README.md.
-# NOTE: these must live under `singleBinary` (not `global`) because only the
-# per-component blocks are wired into the StatefulSet in this chart version.
-
 deploymentMode: SingleBinary
 
 singleBinary:
   replicas: 1
   persistence:
+    # Not backed up to B2: this PV is large and high-churn, and the log data it
+    # holds already lives durably in OCI Object Storage (homelab-loki-logs), so a
+    # B2 backup would double-store reproducible data and blow the free-tier 10 GB
+    # storage cap. Intentionally no source/recurring-job-group labels. See
+    # applications/loki/README.md.
     enabled: true
     storageClass: longhorn
     size: 5Gi
