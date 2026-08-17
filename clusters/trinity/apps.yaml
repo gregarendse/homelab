@@ -86,6 +86,26 @@ apps:
       valueFiles:
         - applications/wireguard/values.yaml
 
+  # Zitadel Cloud PoC — throwaway http-echo app protected by the Zitadel proxy
+  # (see applications/zitadel/README.md). Remove once the PoC concludes.
+  - name: zitadel-echo
+    type: helm
+    namespace: zitadel-echo
+    helm:
+      kind: path
+      path: server
+      releaseName: zitadel-echo
+      valueFiles:
+        - applications/zitadel-echo/values.yaml
+
+  # Rendered (kubenix/Nix) apps -> CI renders to clusters/trinity/rendered/<app>
+  # and Argo CD applies the generated JSON. The manifest creates its own
+  # namespace (actual-sync). A prerequisite Secret named `actual-ctl` must exist
+  # in that namespace (see applications/actual-sync/README.md).
+  - name: actual-sync
+    type: rendered
+    path: applications/actual-sync
+
   # External chart releases (left as placeholders until repo URLs/versions are defined)
   - name: cert-manager
     type: helm
@@ -120,6 +140,21 @@ apps:
       releaseName: oauth2-proxy
       valueFiles:
         - applications/oauth2-proxy/values.yaml
+
+  # Zitadel Cloud PoC — second, isolated oauth2-proxy pointed at Zitadel Cloud.
+  # Independent of the Auth0 proxy above; only zitadel-echo uses it. Remove once
+  # the PoC concludes. See applications/zitadel/README.md.
+  - name: oauth2-proxy-zitadel
+    type: helm
+    namespace: oauth2-proxy-zitadel
+    helm:
+      kind: remote
+      repoURL: https://oauth2-proxy.github.io/manifests
+      chart: oauth2-proxy
+      targetRevision: 10.7.0
+      releaseName: oauth2-proxy-zitadel
+      valueFiles:
+        - applications/oauth2-proxy-zitadel/values.yaml
 
 #      ToDo: enroll
 #  - name: vertical-pod-autoscaler
