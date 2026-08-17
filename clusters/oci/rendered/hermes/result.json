@@ -1,1 +1,280 @@
-{"apiVersion":"v1","items":[{"apiVersion":"v1","kind":"Namespace","metadata":{"annotations":{"kubenix/k8s-version":"1.28","kubenix/project-name":"kubenix"},"labels":{"kubenix/hash":"dd3683823078582e7bb99446b5cfbb6ee3ef5951"},"name":"hermes"}},{"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{"kubenix/k8s-version":"1.28","kubenix/project-name":"kubenix"},"labels":{"app":"hermes","kubenix/hash":"dd3683823078582e7bb99446b5cfbb6ee3ef5951"},"name":"hermes","namespace":"hermes"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"hermes"}},"strategy":{"type":"Recreate"},"template":{"metadata":{"labels":{"app":"hermes"}},"spec":{"automountServiceAccountToken":false,"containers":[{"args":["gateway","run"],"env":[{"name":"HERMES_UID","value":"10000"},{"name":"HERMES_GID","value":"10000"},{"name":"API_SERVER_ENABLED","value":"true"},{"name":"API_SERVER_HOST","value":"0.0.0.0"},{"name":"HASS_URL","value":"http://home-assistant.home-assistant:8123"}],"envFrom":[{"secretRef":{"name":"hermes-secrets"}}],"image":"nousresearch/hermes-agent:latest","imagePullPolicy":"Always","livenessProbe":{"failureThreshold":3,"periodSeconds":30,"tcpSocket":{"port":"gateway"},"timeoutSeconds":5},"name":"hermes","ports":[{"containerPort":8642,"name":"gateway","protocol":"TCP"},{"containerPort":9119,"name":"dashboard","protocol":"TCP"}],"readinessProbe":{"failureThreshold":3,"periodSeconds":15,"tcpSocket":{"port":"gateway"},"timeoutSeconds":5},"resources":{"limits":{"cpu":"1000m","memory":"2048Mi"},"requests":{"cpu":"250m","memory":"512Mi"}},"startupProbe":{"failureThreshold":30,"periodSeconds":10,"tcpSocket":{"port":"gateway"},"timeoutSeconds":5},"volumeMounts":[{"mountPath":"/opt/data","name":"hermes-data"},{"mountPath":"/opt/data/config.yaml","name":"hermes-config","readOnly":true,"subPath":"config.yaml"},{"mountPath":"/dev/shm","name":"dshm"},{"mountPath":"/tmp","name":"tmp-volume"}]}],"securityContext":{"fsGroup":10000},"volumes":[{"name":"hermes-data","persistentVolumeClaim":{"claimName":"hermes-data"}},{"configMap":{"name":"hermes-config"},"name":"hermes-config"},{"emptyDir":{"medium":"Memory","sizeLimit":"1Gi"},"name":"dshm"},{"emptyDir":{},"name":"tmp-volume"}]}}}},{"apiVersion":"v1","data":{"config.yaml":"# Hermes Agent — provider configuration: Cloud provider\n#\n# Referenced from hermes.nix via:\n#   data.\"config.yaml\" = builtins.readFile ./config-cloud.yaml;\n#\n# Uncomment the provider block you want and set the matching API key in\n# hermes-secrets.yaml (see hermes-secrets.example.yaml).\n\nmodel:\n  # ── OpenAI ──────────────────────────────────────────────────────────────────\n  # Requires OPENAI_API_KEY in hermes-secrets.\n  #  provider: openai\n  #  model: gpt-4o\n\n  # ── Gemini / Google AI ──────────────────────────────────────────────────────\n  # Uncomment and comment-out the OpenAI block above.\n  # Requires GEMINI_API_KEY in hermes-secrets.\n  provider: google\n  model: gemini-flash-latest\nfallback_providers:\n  - provider: google\n    model: gemini-flash-lite-latest\n  - provider: openai\n    model: gpt-5.4-mini\n\ngateway:\n  enabled: true\napi_server:\n  enabled: true\n  host: \"0.0.0.0\"\n  port: 8642\n\nplatforms:\n  homeassistant:\n    enabled: true"},"kind":"ConfigMap","metadata":{"annotations":{"kubenix/k8s-version":"1.28","kubenix/project-name":"kubenix"},"labels":{"app":"hermes","kubenix/hash":"dd3683823078582e7bb99446b5cfbb6ee3ef5951"},"name":"hermes-config","namespace":"hermes"}},{"apiVersion":"v1","kind":"PersistentVolumeClaim","metadata":{"annotations":{"kubenix/k8s-version":"1.28","kubenix/project-name":"kubenix"},"labels":{"app":"hermes","kubenix/hash":"dd3683823078582e7bb99446b5cfbb6ee3ef5951","recurring-job-group.longhorn.io/friday-backup":"enabled","recurring-job.longhorn.io/source":"enabled"},"name":"hermes-data","namespace":"hermes"},"spec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"5Gi"}},"storageClassName":"longhorn"}},{"apiVersion":"v1","kind":"Service","metadata":{"annotations":{"kubenix/k8s-version":"1.28","kubenix/project-name":"kubenix"},"labels":{"app":"hermes","kubenix/hash":"dd3683823078582e7bb99446b5cfbb6ee3ef5951"},"name":"hermes","namespace":"hermes"},"spec":{"ports":[{"name":"gateway","port":8642,"protocol":"TCP","targetPort":"gateway"},{"name":"dashboard","port":9119,"protocol":"TCP","targetPort":"dashboard"}],"selector":{"app":"hermes"},"type":"ClusterIP"}}],"kind":"List","labels":{"kubenix/hash":"dd3683823078582e7bb99446b5cfbb6ee3ef5951","kubenix/k8s-version":"1.28","kubenix/project-name":"kubenix"}}
+{
+  "apiVersion": "v1",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "annotations": {
+          "kubenix/k8s-version": "1.28",
+          "kubenix/project-name": "kubenix"
+        },
+        "labels": {
+          "kubenix/hash": "dd3683823078582e7bb99446b5cfbb6ee3ef5951"
+        },
+        "name": "hermes"
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "annotations": {
+          "kubenix/k8s-version": "1.28",
+          "kubenix/project-name": "kubenix"
+        },
+        "labels": {
+          "app": "hermes",
+          "kubenix/hash": "dd3683823078582e7bb99446b5cfbb6ee3ef5951"
+        },
+        "name": "hermes",
+        "namespace": "hermes"
+      },
+      "spec": {
+        "replicas": 1,
+        "selector": {
+          "matchLabels": {
+            "app": "hermes"
+          }
+        },
+        "strategy": {
+          "type": "Recreate"
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "hermes"
+            }
+          },
+          "spec": {
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "args": [
+                  "gateway",
+                  "run"
+                ],
+                "env": [
+                  {
+                    "name": "HERMES_UID",
+                    "value": "10000"
+                  },
+                  {
+                    "name": "HERMES_GID",
+                    "value": "10000"
+                  },
+                  {
+                    "name": "API_SERVER_ENABLED",
+                    "value": "true"
+                  },
+                  {
+                    "name": "API_SERVER_HOST",
+                    "value": "0.0.0.0"
+                  },
+                  {
+                    "name": "HASS_URL",
+                    "value": "http://home-assistant.home-assistant:8123"
+                  }
+                ],
+                "envFrom": [
+                  {
+                    "secretRef": {
+                      "name": "hermes-secrets"
+                    }
+                  }
+                ],
+                "image": "nousresearch/hermes-agent:latest",
+                "imagePullPolicy": "Always",
+                "livenessProbe": {
+                  "failureThreshold": 3,
+                  "periodSeconds": 30,
+                  "tcpSocket": {
+                    "port": "gateway"
+                  },
+                  "timeoutSeconds": 5
+                },
+                "name": "hermes",
+                "ports": [
+                  {
+                    "containerPort": 8642,
+                    "name": "gateway",
+                    "protocol": "TCP"
+                  },
+                  {
+                    "containerPort": 9119,
+                    "name": "dashboard",
+                    "protocol": "TCP"
+                  }
+                ],
+                "readinessProbe": {
+                  "failureThreshold": 3,
+                  "periodSeconds": 15,
+                  "tcpSocket": {
+                    "port": "gateway"
+                  },
+                  "timeoutSeconds": 5
+                },
+                "resources": {
+                  "limits": {
+                    "cpu": "1000m",
+                    "memory": "2048Mi"
+                  },
+                  "requests": {
+                    "cpu": "250m",
+                    "memory": "512Mi"
+                  }
+                },
+                "startupProbe": {
+                  "failureThreshold": 30,
+                  "periodSeconds": 10,
+                  "tcpSocket": {
+                    "port": "gateway"
+                  },
+                  "timeoutSeconds": 5
+                },
+                "volumeMounts": [
+                  {
+                    "mountPath": "/opt/data",
+                    "name": "hermes-data"
+                  },
+                  {
+                    "mountPath": "/opt/data/config.yaml",
+                    "name": "hermes-config",
+                    "readOnly": true,
+                    "subPath": "config.yaml"
+                  },
+                  {
+                    "mountPath": "/dev/shm",
+                    "name": "dshm"
+                  },
+                  {
+                    "mountPath": "/tmp",
+                    "name": "tmp-volume"
+                  }
+                ]
+              }
+            ],
+            "securityContext": {
+              "fsGroup": 10000
+            },
+            "volumes": [
+              {
+                "name": "hermes-data",
+                "persistentVolumeClaim": {
+                  "claimName": "hermes-data"
+                }
+              },
+              {
+                "configMap": {
+                  "name": "hermes-config"
+                },
+                "name": "hermes-config"
+              },
+              {
+                "emptyDir": {
+                  "medium": "Memory",
+                  "sizeLimit": "1Gi"
+                },
+                "name": "dshm"
+              },
+              {
+                "emptyDir": {},
+                "name": "tmp-volume"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "data": {
+        "config.yaml": "# Hermes Agent — provider configuration: Cloud provider\n#\n# Referenced from hermes.nix via:\n#   data.\"config.yaml\" = builtins.readFile ./config-cloud.yaml;\n#\n# Uncomment the provider block you want and set the matching API key in\n# hermes-secrets.yaml (see hermes-secrets.example.yaml).\n\nmodel:\n  # ── OpenAI ──────────────────────────────────────────────────────────────────\n  # Requires OPENAI_API_KEY in hermes-secrets.\n  #  provider: openai\n  #  model: gpt-4o\n\n  # ── Gemini / Google AI ──────────────────────────────────────────────────────\n  # Uncomment and comment-out the OpenAI block above.\n  # Requires GEMINI_API_KEY in hermes-secrets.\n  provider: google\n  model: gemini-flash-latest\nfallback_providers:\n  - provider: google\n    model: gemini-flash-lite-latest\n  - provider: openai\n    model: gpt-5.4-mini\n\ngateway:\n  enabled: true\napi_server:\n  enabled: true\n  host: \"0.0.0.0\"\n  port: 8642\n\nplatforms:\n  homeassistant:\n    enabled: true"
+      },
+      "kind": "ConfigMap",
+      "metadata": {
+        "annotations": {
+          "kubenix/k8s-version": "1.28",
+          "kubenix/project-name": "kubenix"
+        },
+        "labels": {
+          "app": "hermes",
+          "kubenix/hash": "dd3683823078582e7bb99446b5cfbb6ee3ef5951"
+        },
+        "name": "hermes-config",
+        "namespace": "hermes"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "PersistentVolumeClaim",
+      "metadata": {
+        "annotations": {
+          "kubenix/k8s-version": "1.28",
+          "kubenix/project-name": "kubenix"
+        },
+        "labels": {
+          "app": "hermes",
+          "kubenix/hash": "dd3683823078582e7bb99446b5cfbb6ee3ef5951",
+          "recurring-job-group.longhorn.io/friday-backup": "enabled",
+          "recurring-job.longhorn.io/source": "enabled"
+        },
+        "name": "hermes-data",
+        "namespace": "hermes"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "resources": {
+          "requests": {
+            "storage": "5Gi"
+          }
+        },
+        "storageClassName": "longhorn"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "annotations": {
+          "kubenix/k8s-version": "1.28",
+          "kubenix/project-name": "kubenix"
+        },
+        "labels": {
+          "app": "hermes",
+          "kubenix/hash": "dd3683823078582e7bb99446b5cfbb6ee3ef5951"
+        },
+        "name": "hermes",
+        "namespace": "hermes"
+      },
+      "spec": {
+        "ports": [
+          {
+            "name": "gateway",
+            "port": 8642,
+            "protocol": "TCP",
+            "targetPort": "gateway"
+          },
+          {
+            "name": "dashboard",
+            "port": 9119,
+            "protocol": "TCP",
+            "targetPort": "dashboard"
+          }
+        ],
+        "selector": {
+          "app": "hermes"
+        },
+        "type": "ClusterIP"
+      }
+    }
+  ],
+  "kind": "List",
+  "labels": {
+    "kubenix/hash": "dd3683823078582e7bb99446b5cfbb6ee3ef5951",
+    "kubenix/k8s-version": "1.28",
+    "kubenix/project-name": "kubenix"
+  }
+}

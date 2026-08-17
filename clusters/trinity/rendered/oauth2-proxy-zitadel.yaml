@@ -1,0 +1,35 @@
+# GENERATED FILE - DO NOT EDIT
+# Source: clusters/trinity/apps.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: trinity-oauth2-proxy-zitadel
+  namespace: argocd
+  labels:
+    homelab.gregarendse/cluster: "trinity"
+    homelab.gregarendse/app: "oauth2-proxy-zitadel"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: oauth2-proxy-zitadel
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+  # Multi-source: chart from the upstream Helm repo, values from this Git repo
+  # (referenced via the $values ref).
+  sources:
+    - repoURL: https://oauth2-proxy.github.io/manifests
+      targetRevision: 10.7.0
+      chart: oauth2-proxy
+      helm:
+        releaseName: oauth2-proxy-zitadel
+        valueFiles:
+          - $values/applications/oauth2-proxy-zitadel/values.yaml
+    - repoURL: https://github.com/gregarendse/homelab.git
+      targetRevision: master
+      ref: values
