@@ -1,0 +1,116 @@
+{
+  "apiVersion": "v1",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "annotations": {
+          "kubenix/k8s-version": "1.28",
+          "kubenix/project-name": "kubenix"
+        },
+        "labels": {
+          "kubenix/hash": "0c54dd4ca1970a1022b4152a67e3be57c2866712"
+        },
+        "name": "actual-sync"
+      }
+    },
+    {
+      "apiVersion": "batch/v1",
+      "kind": "CronJob",
+      "metadata": {
+        "annotations": {
+          "kubenix/k8s-version": "1.28",
+          "kubenix/project-name": "kubenix"
+        },
+        "labels": {
+          "app.kubernetes.io/name": "actual-ctl",
+          "kubenix/hash": "0c54dd4ca1970a1022b4152a67e3be57c2866712"
+        },
+        "name": "actual-sync",
+        "namespace": "actual-sync"
+      },
+      "spec": {
+        "concurrencyPolicy": "Forbid",
+        "failedJobsHistoryLimit": 3,
+        "jobTemplate": {
+          "spec": {
+            "activeDeadlineSeconds": 900,
+            "backoffLimit": 1,
+            "template": {
+              "metadata": {
+                "labels": {
+                  "app.kubernetes.io/name": "actual-ctl"
+                }
+              },
+              "spec": {
+                "automountServiceAccountToken": false,
+                "containers": [
+                  {
+                    "args": [
+                      "dist/index.js",
+                      "sync-due",
+                      "--limit",
+                      "4",
+                      "--min-age",
+                      "20"
+                    ],
+                    "env": [
+                      {
+                        "name": "DATA_DIR",
+                        "value": "/data"
+                      }
+                    ],
+                    "envFrom": [
+                      {
+                        "secretRef": {
+                          "name": "actual-ctl"
+                        }
+                      }
+                    ],
+                    "image": "ghcr.io/gregarendse/actual-ctl:latest",
+                    "imagePullPolicy": "Always",
+                    "name": "actual-ctl",
+                    "resources": {
+                      "limits": {
+                        "memory": "512Mi"
+                      },
+                      "requests": {
+                        "cpu": "50m",
+                        "memory": "128Mi"
+                      }
+                    },
+                    "volumeMounts": [
+                      {
+                        "mountPath": "/data",
+                        "name": "data"
+                      }
+                    ]
+                  }
+                ],
+                "restartPolicy": "Never",
+                "volumes": [
+                  {
+                    "emptyDir": {},
+                    "name": "data"
+                  }
+                ]
+              }
+            },
+            "ttlSecondsAfterFinished": 172800
+          }
+        },
+        "schedule": "0 */6 * * *",
+        "startingDeadlineSeconds": 300,
+        "successfulJobsHistoryLimit": 3,
+        "timeZone": "Etc/UTC"
+      }
+    }
+  ],
+  "kind": "List",
+  "labels": {
+    "kubenix/hash": "0c54dd4ca1970a1022b4152a67e3be57c2866712",
+    "kubenix/k8s-version": "1.28",
+    "kubenix/project-name": "kubenix"
+  }
+}

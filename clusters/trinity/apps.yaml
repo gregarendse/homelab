@@ -86,6 +86,14 @@ apps:
       valueFiles:
         - applications/wireguard/values.yaml
 
+  # Rendered (kubenix/Nix) apps -> CI renders to clusters/trinity/rendered/<app>
+  # and Argo CD applies the generated JSON. The manifest creates its own
+  # namespace (actual-sync). A prerequisite Secret named `actual-ctl` must exist
+  # in that namespace (see applications/actual-sync/README.md).
+  - name: actual-sync
+    type: rendered
+    path: applications/actual-sync
+
   # External chart releases (left as placeholders until repo URLs/versions are defined)
   - name: cert-manager
     type: helm

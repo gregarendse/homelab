@@ -46,10 +46,12 @@ jobs:
             echo "Rendering $cluster/$app_name from $app_path"
             test -d "$app_path"
 
+            # Build to ./result, then pretty-print it into result.json so the
+            # committed rendered manifests are formatted and easy to review.
             rm -f "$app_path/result.json"
-            (cd "$app_path" && nix build --out-link result.json)
+            (cd "$app_path" && nix build .#manifests && jq '.' ./result > result.json)
             mkdir -p "clusters/$cluster/rendered/$app_name"
-            cp -L "$app_path/result.json" "clusters/$cluster/rendered/$app_name/result.json"
+            cp "$app_path/result.json" "clusters/$cluster/rendered/$app_name/result.json"
           done
 
       - name: Generate Argo CD ApplicationSets
