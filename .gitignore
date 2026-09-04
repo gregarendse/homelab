@@ -16,6 +16,14 @@
 #   Hidden files
 ./.*
 
+# Local environment / secret exports. NOTE: the "./.*" rule above does NOT work
+# (a leading "./" is not valid gitignore syntax), so dotfiles must be listed
+# explicitly.
+.env
+.env.*
+!.env.example
+.env
+
 secret.yml
 secret.yaml
 # Dotfile secret manifests (e.g. applications/<app>/.secret.yaml) — never commit
