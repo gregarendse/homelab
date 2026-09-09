@@ -9,6 +9,19 @@ tick it off, and come back later — nothing here has to be done in one sitting.
 - **Golden rule:** change **one integration at a time**, confirm login works,
   then move on. Auth0 stays fully intact until Phase 6, so any step rolls back by
   reverting the issuer + restoring the old client id/secret.
+- ⚠️ **GitOps: pushing to `master` IS deploying.** Both clusters set
+  `autoSync: true` in `clusters/*/apps.yaml`, which renders every app with
+  `automated: {prune: true, selfHeal: true}`. Two consequences:
+  1. **Update the Kubernetes Secret BEFORE you push the values change.** The
+     Secrets are externally managed, so Argo never touches them — but if the new
+     issuer lands while the old Auth0 credentials are still in the Secret, every
+     app behind that proxy breaks until you fix it.
+  2. **Do not deploy these with `helm upgrade` / `./upgrade.sh`.** `selfHeal`
+     will revert laptop-side changes to whatever is on `master`. Commit + push
+     instead.
+
+  Not everything is auto-synced — **ArgoCD itself is not** (there is no `argocd`
+  app in `clusters/*/rendered/`), so Phases 3 and 4 *do* deploy manually.
 - **Zitadel OIDC endpoints** (needed for Grafana, which uses explicit URLs):
   - authorize: `<ISSUER>/oauth/v2/authorize`
   - token: `<ISSUER>/oauth/v2/token`
@@ -27,6 +40,7 @@ Update this as you go so "future you" knows where to resume.
 |---|---|:--:|
 | 0.1 | Apply `zitadel.tf` (project + 4 OIDC apps) | ☑ |
 | 0.2 | Capture the generated client ids/secrets | ☑ |
+| 0.3 | (Optional) Dress-rehearse CP-1.1 on the PoC rig | ☐ |
 | 1.1 | Cut over the edge proxy (all `*arr` apps) | ☐ |
 | 1.2 | Burn-in: confirm the `*arr` apps for a few days | ☐ |
 | 2.1 | Cut over Grafana | ☐ |
@@ -75,6 +89,12 @@ Context worth remembering between sessions.
   `oauth2_proxy` = `389307350953112302`, `grafana` = `389307350969758446`,
   `argocd_trinity` = `389307350969838839`, `argocd_oci` = `389307350953061623`.
   The matching secrets stay in Terraform state only — never commit them.
+- **Both clusters auto-sync.** `clusters/trinity/apps.yaml` and
+  `clusters/oci/apps.yaml` both set `autoSync: true`, so every rendered app gets
+  `prune: true, selfHeal: true`. Pushing to `master` deploys, and manual
+  `helm upgrade` / `./upgrade.sh` gets reverted. `oauth2-proxy` (trinity) and
+  `monitoring` (OCI) are both enrolled; **ArgoCD itself is not**, so its values
+  files still need a manual apply.
 - **Any org user can log in without a grant** because `zitadel.tf` sets
   `has_project_check = false` and `project_role_check = false`. No per-user
   project grants are needed for the initial cutover.
@@ -128,8 +148,53 @@ terraform output -json zitadel_oidc_client_secrets | jq .
 
 ---
 
-## Phase 1 — Edge proxy (biggest win: every `*arr` app at once)
+### CP-0.3 — (Optional) Dress-rehearse the cutover on the PoC rig
 
+A zero-risk rehearsal for CP-1.1. `zitadel.tf` registered **both** callbacks on
+the `oauth2-proxy` app, including the PoC one
+(`https://auth-zitadel.<base_domain>/oauth2/callback`). So you can point the
+isolated PoC proxy at the **Terraform-managed** credentials and exercise the
+exact same code path CP-1.1 will use — but against the throwaway `zitadel-echo`
+app instead of every `*arr` app.
+
+First confirm the PoC rig is still running (its rendered manifests were only
+committed recently, so Argo may never have deployed it):
+
+```bash
+kubectl -n oauth2-proxy-zitadel get deploy,ingress
+```
+
+If it isn't there, skip this checkpoint and go straight to CP-1.1 — or deploy it
+using the helm command in `applications/zitadel/README.md` §4.
+
+If it is running, swap in the managed credentials:
+
+```bash
+cd infrastructure/identity
+CID=$(terraform output -json zitadel_oidc_client_ids     | jq -r .oauth2_proxy)
+SEC=$(terraform output -json zitadel_oidc_client_secrets | jq -r .oauth2_proxy)
+
+kubectl -n oauth2-proxy-zitadel delete secret oauth2-proxy-zitadel
+kubectl -n oauth2-proxy-zitadel create secret generic oauth2-proxy-zitadel \
+  --from-literal=client-id="$CID" \
+  --from-literal=client-secret="$SEC" \
+  --from-literal=cookie-secret="$(openssl rand -base64 32 | tr -- '+/' '-_')"
+
+kubectl -n oauth2-proxy-zitadel rollout restart deploy/oauth2-proxy-zitadel
+```
+
+- **Verify:** open `https://zitadel-echo.<base_domain>` → Zitadel login → the
+  `http-echo` response. That proves the Terraform-created client, its secret,
+  the issuer URL, and the whole oauth2-proxy flow all work together.
+- **Blast radius:** none. Only the `oauth2-proxy-zitadel` namespace and the
+  throwaway echo app are touched. Production `oauth2-proxy` (Auth0) and Pi-hole
+  are untouched.
+- **If it fails here**, CP-1.1 would have failed too — far better to find out
+  now. Check the proxy logs:
+  `kubectl -n oauth2-proxy-zitadel logs deploy/oauth2-proxy-zitadel`
+
+
+## Phase 1 — Edge proxy (biggest win: every `*arr` app at once)
 ### CP-1.1 — Cut over `oauth2-proxy` (trinity)
 1. Swap the runtime Secret to the Zitadel client (jot down the old Auth0 values
    first for rollback):
@@ -148,16 +213,20 @@ terraform output -json zitadel_oidc_client_secrets | jq .
    ```
    (leave `redirect-url: https://auth.arendse.nom.za/oauth2/callback` as-is —
    it's already registered on the Zitadel app).
-3. Redeploy:
+3. Commit and push — **this is the deploy.** Argo auto-syncs `oauth2-proxy`
+   (it is enrolled in `clusters/trinity/apps.yaml`):
    ```bash
-   helm upgrade --install oauth2-proxy oauth2-proxy \
-     --repo https://oauth2-proxy.github.io/manifests --version 10.7.0 \
-     --namespace oauth2-proxy --values applications/oauth2-proxy/values.yaml
+   git add applications/oauth2-proxy/values.yaml
+   git commit -m "oauth2-proxy: authenticate against Zitadel instead of Auth0"
+   git push
    ```
+   Do **not** run `helm upgrade` here — `selfHeal` would revert it to `master`.
+   Watch it land with `argocd app get oauth2-proxy`, or force it along with
+   `argocd app sync oauth2-proxy`.
 - **Verify:** open one protected app (e.g. `https://sonarr.arendse.nom.za`) →
   redirected to Zitadel → after login you reach the app.
-- **Rollback:** set the issuer back to `https://arendse.uk.auth0.com/` and restore
-  the Auth0 client id/secret in the `oauth2-proxy` Secret, then redeploy.
+- **Rollback:** `git revert` the commit and push (restores the Auth0 issuer),
+  then put the Auth0 client id/secret back in the `oauth2-proxy` Secret.
 
 ### CP-1.2 — Burn-in
 Leave it a few days. Confirm the shared cookie still gives single-sign-on across
@@ -166,6 +235,9 @@ the `*arr` apps and no one is locked out. Only then continue.
 ---
 
 ## Phase 2 — Grafana
+
+> Grafana runs on the **OCI** cluster (`clusters/oci/rendered/monitoring.yaml`),
+> which also has `autoSync: true`. Same rule as Phase 1: Secret first, then push.
 
 ### CP-2.1 — Cut over Grafana
 1. Replace the credentials in the existing Secret (keeps `envFromSecret` intact):
@@ -189,15 +261,24 @@ the `*arr` apps and no one is locked out. Only then continue.
    ```
    Leave `scopes` and `role_attribute_path` as-is (Zitadel returns a verified
    `email` claim, which the admin mapping keys off).
-3. `./upgrade.sh monitoring` (or your normal monitoring deploy) and
-   `kubectl -n monitoring rollout restart deploy/monitoring-grafana`.
+3. Commit and push — Argo auto-syncs `monitoring`. Then restart Grafana so it
+   re-reads the Secret:
+   ```bash
+   kubectl -n monitoring rollout restart deploy/monitoring-grafana
+   ```
+   Again, no `./upgrade.sh` — `selfHeal` would revert it.
 - **Verify:** log in at `https://grafana.arendse.nom.za`; confirm your account
   still lands as **Admin** and others as Viewer.
-- **Rollback:** revert the 3 URLs + name and restore the Auth0 client id/secret.
+- **Rollback:** `git revert` + push to restore the 3 Auth0 URLs, and put the
+  Auth0 client id/secret back in the Secret.
 
 ---
 
 ## Phase 3 — ArgoCD (trinity)
+
+> Unlike Phases 1–2, ArgoCD is **not** self-managed through GitOps — there is no
+> `argocd` entry in `clusters/*/rendered/`. These values files are applied by
+> hand (helm/terraform), so committing alone does **not** deploy them.
 
 ### CP-3.1 — Cut over trinity ArgoCD
 > The built-in `admin` account is your break-glass login the whole time.
@@ -285,7 +366,9 @@ Zitadel is described as the primary provider. Delete this file when done.
 
 ## Rollback cheat-sheet
 
-Every app cutover is two knobs — flip both back:
+Every app cutover is two knobs — flip both back. For the auto-synced apps
+(`oauth2-proxy`, `monitoring`) reverting means **`git revert` + push**; for
+ArgoCD it means editing the file and re-applying by hand.
 
 | App | Revert issuer to | Restore secret |
 |---|---|---|

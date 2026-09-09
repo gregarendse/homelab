@@ -21,19 +21,26 @@ Terraform talks to the Zitadel management API as a service (machine) user:
 
 1. Zitadel Console → your instance → **Users → Service Users → New**. Name it
    e.g. `terraform`.
-2. Give it the right manager role:
-   - **IAM_OWNER** (instance-level) if Terraform should create the `homelab`
-     org (the default in `zitadel.tf`), or
-   - **ORG_OWNER** on an existing org if you reuse it (see step 4).
+2. Give it **ORG_OWNER** on the org that will hold the project (`arendse`):
+   Console → Organization → **Managers** → New. That is all this module needs —
+   it creates a project and applications *inside* an existing org and never
+   touches instance-level resources.
 3. On the service user → **Personal Access Tokens → New** → copy the token.
 4. Put the instance domain + token in `.auto.tfvars` (git-ignored by the
    repo-wide `*.tfvars` rule):
 
    ```hcl
-   zitadel_domain       = "my-instance-abc123.zitadel.cloud"
+   # INSTANCE domain — not an org name. Same host as the OIDC issuer.
+   zitadel_domain       = "homelab-jj4izt.eu1.zitadel.cloud"
    zitadel_access_token = "<personal-access-token>"
+   # ID of the existing org to create the project in (from the Console URL).
+   zitadel_org_id       = "380143417033860850"
    # base_domain defaults to arendse.nom.za; override if needed.
    ```
+
+   > None of these have defaults. If one is missing, Terraform silently
+   > *prompts* for it — which makes a typo look like an authentication failure.
+   > A wrong `zitadel_domain` reports `Instance not found`, not a bad token.
 
    Or export `TF_VAR_zitadel_domain` / `TF_VAR_zitadel_access_token`.
 
@@ -46,7 +53,7 @@ Terraform talks to the Zitadel management API as a service (machine) user:
 ```bash
 cd infrastructure/identity
 terraform init          # pulls the zitadel provider (>= 3)
-terraform plan          # review: 1 org + 1 project + 4 OIDC apps
+terraform plan          # review: 1 project + 4 OIDC apps = 5 to add
 terraform apply
 ```
 
@@ -78,24 +85,28 @@ the "Promote to production" section of `applications/zitadel/README.md`.
 Roll back by reverting the issuer/secret to the Auth0 values — the Auth0 apps in
 `generated.tf` stay intact throughout.
 
-## Reusing the instance's default org instead of creating one
+## Why there is no zitadel_org resource *or* data source
 
-If your service user only has `ORG_OWNER` (not `IAM_OWNER`), don't create a new
-org. Replace `resource "zitadel_org" "homelab"` with a data source that looks the
-org up by ID (find it in the Console URL, or via `terraform output`/the API), and
-repoint the `org_id` references from `zitadel_org.homelab.id` to
-`data.zitadel_org.homelab.id`:
+`zitadel.tf` never declares the organization — neither way works with an
+org-scoped token, because both go through instance-level APIs:
 
-```hcl
-variable "zitadel_org_id" {
-  description = "ID of an existing Zitadel org to use instead of creating one"
-  type        = string
-}
+| Block | Underlying API | Requires |
+|---|---|---|
+| `resource "zitadel_org"` | `AddOrganization` (org v2) | IAM_OWNER |
+| `data "zitadel_org"` | Admin API `GetOrgByID` + `GetDefaultOrg` | IAM_OWNER |
 
-data "zitadel_org" "homelab" {
-  id = var.zitadel_org_id
-}
+The data source is the surprising one: merely *reading* an org uses the
+instance-scoped Admin API, so an ORG_OWNER token fails with
+
 ```
+error while getting org by id <id>: PermissionDenied ... (AUTH-5mWD2)
+```
+
+The only thing actually needed is the org's ID, and we already have it, so the
+org is referenced directly as `org_id = var.zitadel_org_id`. Creating projects
+and applications inside an org uses the Management API, which ORG_OWNER covers.
+Do not reintroduce the data source “for validation” — it only adds a permission
+requirement.
 
 ## Notes
 
