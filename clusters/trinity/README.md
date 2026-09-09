@@ -121,12 +121,31 @@ kubectl -n argocd rollout restart deploy/argocd-server
 `role:admin` to a single email (`policy.default: ''` denies everyone else). Add
 more lines to `policy.csv` to grant access to other users.
 
-## Auto-sync is off by default
+## Auto-sync is ON
 
-`root.yaml` and the rendered child apps leave `syncPolicy.automated` commented
-out, so apps show as **OutOfSync** until you Sync them manually (UI button or
-`argocd app sync <name>`). To enable hands-off GitOps later, uncomment the
-`automated` block (`prune: true`, `selfHeal: true`) in `root.yaml` and re-apply.
+`apps.yaml` sets `autoSync: true` at the top, so the CI generator renders every
+child app with:
+
+```yaml
+syncPolicy:
+  automated:
+    prune: true
+    selfHeal: true
+```
+
+That means **pushing to `master` deploys**. Argo reconciles automatically — no
+manual Sync needed — and `selfHeal` actively reverts drift, including changes you
+make by hand with `helm`/`kubectl`.
+
+To pause reconciliation for one app while debugging, set `autoSync: false` on
+that app in `apps.yaml`, regenerate, and commit:
+
+```yaml
+  - name: sonarr
+    autoSync: false
+```
+
+Setting the top-level `autoSync: false` disables it cluster-wide.
 
 ## Important: Argo reads from `master`, not your working tree
 
@@ -136,7 +155,7 @@ syncing — local changes are invisible to Argo until they land on `master`.
 
 ## Relationship to the manual `upgrade.sh` flow
 
-`./upgrade.sh <app>` does a direct `helm upgrade` from your laptop and is fine for
-quick iteration. Once Argo manages an app, prefer syncing through Argo so the two
-don't fight over the release (Argo's `selfHeal`, if enabled, will revert manual
-changes back to what's on `master`).
+`./upgrade.sh <app>` does a direct `helm upgrade` from your laptop. It is fine for
+apps Argo does not manage, but for anything in `apps.yaml` it is now actively
+counter-productive: `selfHeal` is enabled, so Argo will revert your release back
+to whatever is on `master`. For managed apps, commit and push instead.
