@@ -31,16 +31,16 @@ tick it off, and come back later — nothing here has to be done in one sitting.
 
 Update this as you go so "future you" knows where to resume.
 
-- **Last completed:** CP-0.2 — Phase 0 done. `homelab` project + 4 OIDC apps
-  live in the `arendse` org, and their credentials are readable via
-  `terraform output`.
+- **Last completed:** CP-0.3 — dress rehearsal passed. The Terraform-managed
+  `oauth2_proxy` client authenticated `zitadel-echo` end to end through
+  `oauth2-proxy-zitadel` on trinity.
 - **Next up:** CP-1.1 — the edge-proxy cutover (moves every `*arr` app at once).
 
 | # | Checkpoint | Done |
 |---|---|:--:|
 | 0.1 | Apply `zitadel.tf` (project + 4 OIDC apps) | ☑ |
 | 0.2 | Capture the generated client ids/secrets | ☑ |
-| 0.3 | (Optional) Dress-rehearse CP-1.1 on the PoC rig | ☐ |
+| 0.3 | (Optional) Dress-rehearse CP-1.1 on the PoC rig | ☑ |
 | 1.1 | Cut over the edge proxy (all `*arr` apps) | ☐ |
 | 1.2 | Burn-in: confirm the `*arr` apps for a few days | ☐ |
 | 2.1 | Cut over Grafana | ☐ |
@@ -95,6 +95,13 @@ Context worth remembering between sessions.
   `helm upgrade` / `./upgrade.sh` gets reverted. `oauth2-proxy` (trinity) and
   `monitoring` (OCI) are both enrolled; **ArgoCD itself is not**, so its values
   files still need a manual apply.
+- **CP-0.3 proved the credentials work (verified, not assumed).** The PoC proxy
+  on trinity was repointed from its original hand-made client to the
+  Terraform-managed `oauth2_proxy` client and logged in successfully against
+  `zitadel-echo`. CP-1.1 is therefore the same swap on a different hostname.
+  The old hand-made PoC app in the `trinity` project is now unused — clean it up
+  at CP-6.4. A backup of the previous Secret was written to
+  `/tmp/oauth2-proxy-zitadel.bak.yaml` (ephemeral; do not rely on it).
 - **Any org user can log in without a grant** because `zitadel.tf` sets
   `has_project_check = false` and `project_role_check = false`. No per-user
   project grants are needed for the initial cutover.
