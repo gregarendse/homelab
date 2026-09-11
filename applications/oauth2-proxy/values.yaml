@@ -3,25 +3,31 @@
 #
 # ingress-nginx calls this proxy's /oauth2/auth on every request to a protected
 # app (via the auth-url/auth-signin annotations on each app's Ingress). The
-# proxy authenticates users against Auth0 (OIDC) and sets a session cookie
-# scoped to *.arendse.nom.za so a single login covers all protected apps.
+# proxy authenticates users against Zitadel Cloud (OIDC) and sets a session
+# cookie scoped to *.arendse.nom.za so a single login covers all protected apps.
 #
 # Sensitive values (client id/secret, cookie secret) are NOT set here. They are
-# injected from the externally-managed `oauth2-proxy` Secret via existingSecret
-# below. See applications/oauth2-proxy/README.md for the create commands and the
-# matching Auth0 application setup.
+# injected from the externally-managed `oauth2-proxy-zitadel-media` Secret via existingSecret
+# below. See applications/zitadel/MIGRATION.md (CP-1.1) for the cutover steps;
+# the Zitadel application itself is managed in infrastructure/identity/zitadel.tf.
 
 config:
   # Pull client-id, client-secret and cookie-secret from this pre-created Secret
   # instead of templating them into a chart-managed Secret (keeps them out of
   # Git and out of Helm/Argo's managed objects).
-  existingSecret: oauth2-proxy
+  # Stage this Secret before pushing. Leave the Auth0 `oauth2-proxy` Secret
+  # untouched so reverting this reference and the issuer restores the old setup.
+  existingSecret: oauth2-proxy-zitadel-media
 
 extraArgs:
   provider: oidc
-  oidc-issuer-url: https://arendse.uk.auth0.com/
+  # Zitadel Cloud instance issuer. NOTE: no trailing slash — it must exactly
+  # match the `issuer` in <issuer>/.well-known/openid-configuration, otherwise
+  # oauth2-proxy fails at startup with "issuer did not match".
+  oidc-issuer-url: https://homelab-jj4izt.eu1.zitadel.cloud
   # The proxy runs on its own hostname; ingress-nginx redirects unauthenticated
-  # users here, and Auth0 redirects back to <this host>/oauth2/callback.
+  # users here, and Zitadel redirects back to <this host>/oauth2/callback. This
+  # URI is pre-registered on the Zitadel app by zitadel.tf.
   redirect-url: https://auth.arendse.nom.za/oauth2/callback
 
   # Cookie scoped to the parent domain so one login is shared by every
@@ -30,9 +36,9 @@ extraArgs:
   # Restrict cookie/redirects to our domain to prevent open-redirect abuse.
   whitelist-domain: .arendse.nom.za
 
-  # "Lock down everything": only these emails may pass. Auth0 still does the
-  # actual authentication; this is the coarse allow-list on top.
-  # Adjust/extend as you onboard more users.
+  # The media project's org check restricts login to arendse while no external
+  # project grants exist. This proxy adds no email restriction. Keep Zitadel
+  # self-registration disabled and review access before onboarding more users.
   email-domain: "*"
   authenticated-emails-file: ""
 
