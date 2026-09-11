@@ -3,9 +3,9 @@
 # (e.g. `oauth2-proxy-zitadel`) — they are NOT written to Git, only to the
 # Terraform state (Backblaze S3 backend).
 #
-# Read a single secret with, e.g.:
-#   terraform output -json zitadel_oidc_client_ids     | jq -r .oauth2_proxy
-#   terraform output -json zitadel_oidc_client_secrets | jq -r .oauth2_proxy
+# Original homelab outputs stay intact for the working PoC and rollback.
+# New clients use the separate zitadel_sso_* outputs below; do not switch any
+# workload until its checkpoint in applications/zitadel/MIGRATION.md.
 
 output "zitadel_oidc_client_ids" {
   description = "Generated OIDC client_id per app, keyed by local.oidc_apps key."
@@ -27,4 +27,21 @@ output "zitadel_org_id" {
 output "zitadel_project_id" {
   description = "ID of the homelab project."
   value       = zitadel_project.homelab.id
+}
+
+output "zitadel_sso_project_ids" {
+  description = "New SSO project IDs, keyed by access boundary (media, pihole, argocd, grafana)."
+  value       = { for k, p in zitadel_project.sso : k => p.id }
+}
+
+output "zitadel_sso_client_ids" {
+  description = "New OIDC client IDs keyed by integration (media, media_poc, pihole, grafana, argocd_trinity, argocd_oci)."
+  value       = { for k, a in zitadel_application_oidc.sso : k => a.client_id }
+  sensitive   = true
+}
+
+output "zitadel_sso_client_secrets" {
+  description = "New OIDC client secrets keyed by integration; legacy zitadel_oidc_client_secrets remains unchanged."
+  value       = { for k, a in zitadel_application_oidc.sso : k => a.client_secret }
+  sensitive   = true
 }

@@ -1,14 +1,16 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # Zitadel Cloud — homelab identity configuration (Terraform).
 #
-# Unlike auth0.tf (which *imports* a hand-built tenant), this is a GREENFIELD
-# declarative config: it creates the project and OIDC applications from scratch
-# inside an EXISTING organization. It mirrors the Auth0 applications in
-# generated.tf so a later cutover is a like-for-like swap.
+# Creates projects and OIDC applications inside the EXISTING "arendse" org.
+# Auth0 remains outside Terraform state as the rollback path.
 #
 # What Terraform manages here:
-#   • the "homelab" project (inside the pre-existing org)
-#   • one OIDC application per SSO integration (oauth2-proxy, grafana, argocd …)
+#   • the original "homelab" project/clients, preserved for the working PoC
+#   • separate media, pihole, argocd and grafana projects (CP-0.5)
+#   • separate OIDC credentials per app/proxy deployment, including the media PoC
+#
+# New clients are additive: creating them does not switch any workload. Follow
+# applications/zitadel/MIGRATION.md for the per-integration cutover.
 #
 # What it does NOT manage: the organization itself. The org is referenced purely
 # by ID (var.zitadel_org_id), deliberately WITHOUT a `data "zitadel_org"` lookup.
@@ -28,10 +30,8 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 locals {
-  # Public hosts that will authenticate against Zitadel. These mirror the Auth0
-  # clients in generated.tf. During the PoC only the oauth2-proxy-zitadel host is
-  # live; pre-registering the production callbacks now makes the eventual cutover
-  # a no-op (no dashboard clicking, no re-issued secrets).
+  # Legacy registrations: keep their keys, settings and resource addresses
+  # intact until every consumer has migrated and rollback is no longer needed.
   oidc_apps = {
     oauth2_proxy = {
       name = "oauth2-proxy"
@@ -85,10 +85,8 @@ locals {
 # We only ever need the org's ID, and we already have it, so the lookup buys us
 # nothing but an extra permission requirement.
 
-# Project grouping the OIDC applications. project_role_assertion adds the user's
-# project roles to their tokens (useful for Grafana/ArgoCD RBAC later); the
-# checks are relaxed so any org user can log in without explicit authorization —
-# appropriate for a single-tenant homelab.
+# Legacy project used by the working PoC. Both checks remain disabled to avoid
+# changing its behavior during preparation; this is NOT an org-only boundary.
 resource "zitadel_project" "homelab" {
   name                   = "homelab"
   org_id                 = var.zitadel_org_id
@@ -122,6 +120,105 @@ resource "zitadel_application_oidc" "app" {
   # BEARER (opaque) access tokens; identity is carried in the ID token / userinfo,
   # which is what these clients read. Assert roles + userinfo into the ID token so
   # email/profile/roles are available without an extra userinfo call.
+  access_token_type           = "OIDC_TOKEN_TYPE_BEARER"
+  access_token_role_assertion = false
+  id_token_role_assertion     = true
+  id_token_userinfo_assertion = true
+
+  clock_skew         = "0s"
+  dev_mode           = false
+  additional_origins = []
+}
+
+# New access boundaries. Do not repurpose the legacy resources above: changing
+# a client's project can replace it and invalidate working credentials.
+locals {
+  sso_projects = toset(["media", "pihole", "argocd", "grafana"])
+
+  sso_apps = {
+    media = {
+      project                   = "media"
+      name                      = "media-proxy-trinity"
+      redirect_uris             = ["https://auth.${var.base_domain}/oauth2/callback"]
+      post_logout_redirect_uris = ["https://auth.${var.base_domain}"]
+    }
+
+    media_poc = {
+      project                   = "media"
+      name                      = "media-proxy-poc-trinity"
+      redirect_uris             = ["https://auth-zitadel.${var.base_domain}/oauth2/callback"]
+      post_logout_redirect_uris = ["https://auth-zitadel.${var.base_domain}"]
+    }
+
+    pihole = {
+      project                   = "pihole"
+      name                      = "pihole-proxy-oci"
+      redirect_uris             = ["https://pihole.${var.base_domain}/oauth2/callback"]
+      post_logout_redirect_uris = ["https://pihole.${var.base_domain}"]
+    }
+
+    grafana = {
+      project                   = "grafana"
+      name                      = "grafana"
+      redirect_uris             = ["https://grafana.${var.base_domain}/login/generic_oauth"]
+      post_logout_redirect_uris = ["https://grafana.${var.base_domain}/login"]
+    }
+
+    argocd_trinity = {
+      project                   = "argocd"
+      name                      = "argocd-trinity"
+      redirect_uris             = ["https://trinity.argocd.${var.base_domain}/auth/callback"]
+      post_logout_redirect_uris = ["https://trinity.argocd.${var.base_domain}"]
+    }
+
+    argocd_oci = {
+      project = "argocd"
+      name    = "argocd-oci"
+      redirect_uris = [
+        "https://argocd.${var.base_domain}/auth/callback",
+        "https://oci.argocd.${var.base_domain}/auth/callback",
+      ]
+      post_logout_redirect_uris = [
+        "https://argocd.${var.base_domain}",
+        "https://oci.argocd.${var.base_domain}",
+      ]
+    }
+  }
+}
+
+# Initially admit all users in the owning org, without individual assignments.
+# No external org receives a project grant. Self-registration must stay disabled
+# in the console; Terraform does not manage that policy. New org users will also
+# be admitted, so revisit role checks before onboarding them. App RBAC is separate.
+resource "zitadel_project" "sso" {
+  for_each = local.sso_projects
+
+  name                   = each.key
+  org_id                 = var.zitadel_org_id
+  project_role_assertion = true
+  project_role_check     = false
+  has_project_check      = true
+}
+
+resource "zitadel_application_oidc" "sso" {
+  for_each = local.sso_apps
+
+  org_id     = var.zitadel_org_id
+  project_id = zitadel_project.sso[each.value.project].id
+
+  name           = each.value.name
+  redirect_uris  = each.value.redirect_uris
+  response_types = ["OIDC_RESPONSE_TYPE_CODE"]
+  grant_types = [
+    "OIDC_GRANT_TYPE_AUTHORIZATION_CODE",
+    "OIDC_GRANT_TYPE_REFRESH_TOKEN",
+  ]
+  post_logout_redirect_uris = each.value.post_logout_redirect_uris
+
+  app_type         = "OIDC_APP_TYPE_WEB"
+  auth_method_type = "OIDC_AUTH_METHOD_TYPE_BASIC"
+  version          = "OIDC_VERSION_1_0"
+
   access_token_type           = "OIDC_TOKEN_TYPE_BEARER"
   access_token_role_assertion = false
   id_token_role_assertion     = true
