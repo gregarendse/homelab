@@ -39,6 +39,14 @@ resource "helm_release" "longhorn" {
       name  = "defaultSettings.autoDeletePodWhenVolumeDetachedUnexpectedly"
       value = "true"
     },
+    # Set the minimum available storage percentage reserve to 10% (default is 25%).
+    # On a single-node homelab server, 25% reserve causes Longhorn to mark host
+    # storage unschedulable as soon as disk usage hits 75%, preventing volume
+    # attachments and salvages.
+    {
+      name  = "defaultSettings.storageMinimalAvailablePercentage"
+      value = "10"
+    },
     # Configure the default Backblaze B2 backup target via the Longhorn chart's
     # defaultBackupStore block. pollInterval is 0 (polling disabled) to avoid
     # LIST/HEAD traffic exceeding B2's free-tier Class B/C caps.
