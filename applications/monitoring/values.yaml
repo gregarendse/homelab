@@ -1,7 +1,7 @@
 prometheus:
   prometheusSpec:
-    retention: 7d
-    retentionSize: 10GB
+    retention: 3d
+    retentionSize: 5GB
     storageSpec:
       volumeClaimTemplate:
         # Not backed up to B2: Prometheus TSDB is large and high-churn, and its
