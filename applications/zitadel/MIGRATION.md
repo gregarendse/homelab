@@ -54,15 +54,17 @@ Update this as you go so "future you" knows where to resume.
 - **In progress:** CP-1.2 — a few days of normal media-app use on **trinity**.
   Make no further auth changes during burn-in. Check login/session refresh and
   access across the protected media apps; keep Auth0's original Secret intact.
-  The user asked to keep going, so CP-2.1 **preparation** for Grafana on **oci**
-  is proceeding alongside burn-in. This does not mark CP-1.2 complete or deploy
-  another cutover.
-- **Next action (OCI / CP-2.1):** the user confirmed context OCI and creation of
-  `monitoring/grafana-zitadel`, and asked to complete Grafana. The unused Secret
-  is staged and the cutover is prepared, **not yet deployed**. Proceed with
-  separate documentation and Grafana-only cutover commits; the user pushes and
-  verifies the OCI rollout. Link user `2`, then disable email lookup in a second
-  rollout during the same session. Do not mark CP-2.1 complete before those checks.
+  The user asked to keep going, so CP-2.1 for Grafana on **oci** is proceeding
+  alongside burn-in. The last user-supplied Grafana configuration has the old
+  strict email-based role rule and lookup `true`; login fails. Neither
+  checkpoint is complete; exact live sync/health/revision has not been supplied.
+- **Next action (OCI / CP-2.1):** publish and verify minimal Zitadel SSO from
+  values commit `66ed660`, with Viewer auto-provisioning, standard email claims,
+  skipped role sync and lookup `false`. The user explicitly requested the push.
+  Role mapping and user `2` association are no longer prerequisites; a new
+  account using the actual Zitadel email is expected. OCI rollout/settings,
+  fresh login, Viewer access, local-admin browser fallback and re-login/refresh
+  remain unverified. Do not mark the checkpoint complete on push alone.
 - **Current commit IDs:** `0fc08bd` (identity/docs) and `884fc5f` (single-file
   cutover) in the current Git history. Their earlier local IDs were `e6eeabc`
   and `fb35bde`. The agent compared the production values at `884fc5f` and
@@ -84,7 +86,7 @@ Update this as you go so "future you" knows where to resume.
 | 0.7 | PoC login and smoke checks passed; outside-org test deferral accepted | ☑ |
 | 1.1 | Production Zitadel login, ArgoCD health and rollout verified | ☑ |
 | 1.2 | In progress: normal `*arr` use for a few days; retain Auth0 rollback | ☐ |
-| 2.1 | Grafana on OCI: Secret staged per user; cutover ready, deployment/linking pending | ☐ |
+| 2.1 | Grafana on OCI: minimal Viewer SSO prepared locally; deploy/login/fallback/refresh pending, roles deferred | ☐ |
 | 3.1 | Cut over ArgoCD (trinity) | ☐ |
 | 4.1 | Cut over ArgoCD (OCI) | ☐ |
 | 5.1 | Move Pi-hole to its dedicated project/application (OCI) | ☐ |
@@ -176,8 +178,10 @@ Context worth remembering between sessions.
   `org_id = var.zitadel_org_id`, `has_project_check = true`,
   `project_role_check = false` and `project_role_assertion = true`. With no
   project grants to external orgs, login is limited to users in `arendse`, but
-  does not require project roles or per-user assignments. No roles, assignments,
-  project grants, policy resources or Kubernetes providers are added.
+  does not require project roles or per-user assignments. No role/assignment,
+  project-grant, policy or Kubernetes-provider Terraform resources are added.
+  Grafana roles were created manually; see CP-2.1. Outside-org denial remains
+  deferred and unverified, not a demonstrated access-boundary test.
 - **Self-registration must remain disabled.** The user reports it is disabled;
   this has not been independently verified and Terraform does not manage it.
   Future users added to `arendse` automatically gain login to all four projects.
@@ -185,6 +189,16 @@ Context worth remembering between sessions.
   per-project user restrictions until wanted, then design explicit assignments
   and role checks. Separate app RBAC still applies now: org-wide login does
   **not** mean everyone is a Grafana or ArgoCD administrator.
+- **Grafana: minimal working SSO first; roles later.** Supersede the user `2`
+  alias/linking and strict project-role plans. Eligible Zitadel users may
+  auto-provision as Viewer in default org `1`, using their actual Zitadel email;
+  preserving user `2` is not guaranteed. Skip role sync to preserve local role
+  assignments; no role mapping, claim aliases or insecure email lookup.
+  OAuth signup is enabled, local self-signup disabled. Retain local admin `1`,
+  Auth0 user `2` and old Secrets; intentionally delete/modify no existing user or
+  email. Stop on uniqueness collisions: no automatic alias/merge or DB surgery.
+  A DB backup was explicitly declined. Dashboard access, browser fallback and
+  fresh re-login/refresh remain pending; future roles are not a prerequisite.
 
 ---
 
@@ -680,289 +694,133 @@ burn-in remains open. Do not infer stability just because preparation continues.
 
 ### CP-2.1 — Cut over Grafana
 
-**Approved cutover prepared; deployment and verification pending. Target cluster:
-oci, not trinity.** Media burn-in remains open. Use the new `grafana` project's
-client from CP-0.6, not the original `homelab` client. User confirmation of the
-exact verified Zitadel email and approval of the restricted linking window are
-recorded below. The user confirmed OCI context and creation of the unused
-`monitoring/grafana-zitadel` Secret. Actual claim delivery and account linking
-remain untested. **Pushing the values to master deploys the temporary window.**
-The user asked to complete Grafana: proceed with separate documentation and
-cutover commits. Only the user pushes and runs the OCI rollout/login checks;
-then close the temporary window in section D before stopping.
+**Minimal working SSO first; role mapping deferred. Target cluster: oci.**
+The minimal values are committed as `66ed660`, and the user explicitly requested
+publication to `master`. Deployment and login verification remain pending.
+Last user-supplied live settings had the old strict email-based role rule and
+global email lookup `true`; login failed. Exact live ArgoCD sync/health/revision
+has not been supplied. This checkpoint is **not complete**, and media burn-in
+remains open.
 
-#### A. Confirm the OCI deployment and local admin fallback ✅
+#### A. Verified preflight and short history
 
-**Confirmed by user output:**
-- OCI Grafana deployment has one ready replica and image
-  `docker.io/grafana/grafana:11.4.1`.
-- OAuth environment Secret is `grafana-auth0`.
-- HTTP Basic `GET /api/user` returned local user `id: 1`, `login: admin`,
-  `isGrafanaAdmin: true`. Credentials work for the admin API; no password was
-  shared. This does not enable or test the currently hidden browser login form.
+- User output confirmed Grafana `11.4.1`, one ready replica on OCI; the original
+  Auth0 deployment used `grafana-auth0` and separate `grafana-admin-credentials`.
+- HTTP Basic `GET /api/user` verified local admin **user `1`**, login `admin`,
+  `isGrafanaAdmin: true`. **Browser fallback remains unverified**; do not reset
+  its password or assume the Secret resets an existing persisted password.
+- Existing Auth0 **user `2`**, org `1`, has login/email `greg.arendse@gmail.com`.
+  The user clarified that their Zitadel email differs. The strict email-based
+  rule failed with “IdP did not return a role attribute”. The later user `2`
+  alias/linking and project-role plans are superseded, not required steps.
+- User confirmed OCI context and creation of `monitoring/grafana-zitadel` with
+  the dedicated Grafana client credentials. Staging is done: do not recreate it
+  or print credentials. Retain `grafana-auth0` and `grafana-admin-credentials`.
+- Retain both existing accounts and their emails; intentionally delete/modify
+  neither. A Grafana DB backup was **explicitly declined**; none was taken.
 
-The commands below are completed checks, not a request to reset any
-credentials. Account-preservation approval is recorded in section B; Secret
-staging in section C is now user-confirmed.
-Only the user runs cluster commands. Select the OCI kubeconfig and confirm
-`kubectl config current-context` before any write. Read the deployment without
-printing credential values:
+#### B. Minimal design to review
 
-```bash
-kubectl --context=oci -n monitoring get deployment monitoring-grafana -o json |
-  jq '{ready: .status.readyReplicas,
-    containers: [.spec.template.spec.containers[] | {
-      name, image,
-      envSecrets: [.envFrom[]?.secretRef.name // empty],
-      credentialSecrets: ([.env[]?.valueFrom.secretKeyRef.name // empty] | unique)
-    }]}'
+Keep `grafana.envFromSecret: grafana-zitadel` and the standard generic OAuth
+provider endpoints unchanged:
+
+```yaml
+name: Zitadel
+auth_url: https://homelab-jj4izt.eu1.zitadel.cloud/oauth/v2/authorize
+token_url: https://homelab-jj4izt.eu1.zitadel.cloud/oauth/v2/token
+api_url: https://homelab-jj4izt.eu1.zitadel.cloud/oidc/v1/userinfo
 ```
 
-Expect the Grafana container to reference `grafana-auth0` and the separate
-`grafana-admin-credentials` Secret. Record its actual image/version before
-planning account migration; the pinned parent chart uses Grafana chart `8.8.*`.
+- `[auth.generic_oauth]`: scopes `openid profile email offline_access`,
+  `use_pkce=true`, `use_refresh_token=true`, `allow_sign_up=true`,
+  `skip_org_role_sync=true`, `role_attribute_strict=false`,
+  `allow_assign_grafana_admin=false`; no `role_attribute_path`, claim aliases
+  or `org_mapping`. Use standard claims, including the actual Zitadel email.
+- `[users]`: `allow_sign_up=false` disables **local self-signup only**;
+  `auto_assign_org=true`, `auto_assign_org_role=Viewer`, default org ID `1`.
+  OAuth signup independently auto-provisions IdP-authenticated users.
+- `[auth]`: `oauth_allow_insecure_email_lookup=false`,
+  `disable_login_form=false`, `oauth_auto_login=false`; keep Basic auth enabled
+  and generic OAuth `auto_login=false`. No temporary email-lookup window.
+- This normally provisions a **new Grafana account**, not necessarily user `2`.
+  New accounts may not inherit old preferences/permissions. Local admin can
+  adjust them manually later; skipped role sync preserves local assignments.
+  **Stop on email/login uniqueness collisions**: no DB surgery, automatic
+  alias/merge, email changes or enabling lookup to force association.
+- Zitadel's Grafana project has `has_project_check=true`,
+  `project_role_check=false`, no external project grants configured, and
+  self-registration disabled **according to the user**. Intended access is
+  org-wide: eligible `arendse` users may provision as Viewer, not administrator.
+  Outside-org negative tests remain **deferred and unverified**.
+- Role definitions `admin`, `editor`, `viewer` were manually created in the
+  Grafana project and confirmed; the user's assignment is only tentative.
+  Role mapping/assignment verification is deferred, **not a prerequisite**.
 
-**The last user-verified Auth0 deployment hides the login form and enables
-OAuth auto-login; prepared local values reverse both settings.** The
-admin Secret's existence does not prove the persisted password is current.
-With the existing local admin username (`admin` if unchanged), the user can
-check HTTP Basic authentication against Grafana on **oci**:
+#### C. Deploy and verify — pending, user-run on OCI only
 
-```bash
-curl -q --basic --user admin --fail --silent --show-error \
-  --connect-timeout 10 --max-time 20 \
-  https://grafana.arendse.nom.za/api/user |
-  jq '{id, login, isGrafanaAdmin}'
-```
+1. Publish values commit `66ed660` and the separate migration docs, as explicitly
+   requested by the user. Keep unrelated work out; auto-sync deploys `master`.
+   Only the user runs cluster commands. Confirm `kubectl config current-context`
+   is `oci` before any cluster write. Do not manually Helm-upgrade or restart
+   ahead of GitOps.
+2. After the approved push, record exact sync, health and Git revision;
+   require `Synced` / `Healthy` at the intended revision and a successful rollout:
 
-Curl prompts for the local password; do not put it in command history or share
-it. Do not follow redirects, disable TLS verification, or use a service token.
-Pass: the expected local user and `isGrafanaAdmin: true`, not an error/HTML or an
-SSO cookie. Basic auth is separate from the hidden login form, but must be
-confirmed live. If this fails, stop; do not reset credentials blindly. Updating
-the Secret and restarting does **not** reset an existing persisted Grafana
-password. `/login?disableAutoLogin=true` also does not unhide a disabled form.
+   ```bash
+   kubectl --context=oci -n argocd get application oci-monitoring -o json |
+     jq '{sync: .status.sync.status, health: .status.health.status,
+       revision: .status.sync.revision, revisions: .status.sync.revisions}'
+   kubectl --context=oci -n monitoring rollout status deployment/monitoring-grafana --timeout=120s
+   ```
 
-#### B. Preserve the existing Grafana account (approved; not yet executed)
-
-**Account inventory confirmed by user:**
-
-| Purpose | Grafana ID | Login / email | Organization |
-|---|---|---|---|
-| Local server-admin fallback | `1` | Login `admin`; server-admin API access verified | Not part of the OAuth migration |
-| Existing Auth0-backed account | `2` | `greg.arendse@gmail.com` for both login and email | `orgId: 1` |
-
-Preserve user `2` and its organization membership/permissions; do not recreate
-it or merge it with local admin `1`. The inventory came from `/api/user` in the
-existing Auth0 browser session, separately from the local-admin Basic-auth test.
-
-Grafana's generic OAuth identity uses the external `sub`; Zitadel supplies a
-new subject even when the email matches Auth0. In Grafana `11.4.x`, insecure
-email lookup is off by default, so an existing email/login can produce a user
-collision rather than automatic linking. Do not enable
-`oauth_allow_insecure_email_lookup` as an automatic workaround or delete users.
-
-**Approved by the user:** a short, restricted email-linking window, rather than
-deleting user `2` or editing the Grafana database directly. The user also
-confirmed the Zitadel email is exactly `greg.arendse@gmail.com` and marked
-verified. This is a user-reported console check, not a captured token/claim test.
-Local values now prepare this restriction; no runtime setting has changed.
-
-1. **Grafana database backup explicitly declined by the user.** Keep local
-   server-admin `1` and the Auth0 Secret available. Recovery will need a
-   separately reviewed reverse-linking procedure, not restoration from a new
-   pre-cutover backup. The exact verified Zitadel email is user-confirmed; the
-   login gate will require boolean `email_verified` true in the claims.
-
-   **Provider inventory confirmed by user output on OCI:** email lookup is
-   `false`; only `auth.basic` and `auth.generic_oauth` are enabled. Generic OAuth
-   currently allows signup and uses the substring Admin/Viewer rule, with strict
-   role checking off. `org_mapping` is empty, role sync is enabled, and granting
-   server-admin privileges is disabled. No second OAuth provider was reported.
-   The user subsequently confirmed the exact verified Zitadel email and approved
-   the linking window. No second provider may be enabled during that window.
-
-   The completed read-only check is retained below. Keep the filter intact: the
-   unfiltered settings response may contain sensitive configuration.
+3. Check live settings using the local admin on **OCI**. Keep this filter intact;
+   the raw response can contain sensitive settings. Curl prompts for the password:
 
    ```bash
    curl -q --basic --user admin --fail --silent --show-error \
      --connect-timeout 10 --max-time 20 \
      https://grafana.arendse.nom.za/api/admin/settings |
-     jq '{emailLookup: .auth.oauth_allow_insecure_email_lookup,
-       enabledAuthSections: [to_entries[] |
-         select(.key | startswith("auth.")) |
-         select(.value.enabled == "true" or .value.enabled == true) | .key],
+     jq '{auth: (.auth | {oauth_allow_insecure_email_lookup,
+         disable_login_form, oauth_auto_login}),
+       basic: (."auth.basic" | {enabled}),
        genericOAuth: (."auth.generic_oauth" | {
-         allow_sign_up, role_attribute_path, role_attribute_strict,
-         org_mapping, skip_org_role_sync, allow_assign_grafana_admin
-       })}'
+         enabled, name, auth_url, token_url, api_url, scopes,
+         use_pkce, use_refresh_token, auto_login, allow_sign_up,
+         skip_org_role_sync, role_attribute_path, role_attribute_strict,
+         allow_assign_grafana_admin, org_mapping,
+         email_attribute_path, login_attribute_path, name_attribute_path
+       }),
+       users: (.users | {allow_sign_up, auto_assign_org,
+         auto_assign_org_id, auto_assign_org_role})}'
    ```
 
-   This is read-only. The API password prompt is expected; do not share the
-   password or raw settings. The provider inventory check and linking approval
-   are complete, and Secret staging is user-confirmed. The reviewed deployment
-   remains pending.
-2. Temporarily enable global `[auth] oauth_allow_insecure_email_lookup` for the
-   provider cutover. Gate generic OAuth login to that **exact verified email**:
-   strict role checking, no alternative org mapping, role sync enabled, and an
-   expression returning organization `Admin` only for the match and no role
-   otherwise. Disable OAuth user creation (`allow_sign_up: false`) and do not
-   grant Grafana server-admin privileges. The current inventory shows no other
-   enabled OAuth provider; recheck if authentication configuration changes before
-   the linking window, since the email-lookup switch is global.
-3. Log in through Zitadel and verify `/api/user` still reports **user `2`, org
-   `1`** and the expected organization Admin permissions. Keep local admin `1`
-   available; its browser form must be restored for the cutover.
-4. In a separate follow-up rollout, disable insecure email lookup again.
-   Revoke user `2`'s old sessions using Grafana's supported admin logout API,
-   then repeat fresh Zitadel login with lookup **off**. Verify user ID and
-   permissions again and test refresh. Leave email lookup off long-term.
-   Complete linking and disabling lookup in the same session; do not leave the
-   temporary setting enabled between work sessions.
+   Require section B's settings: OAuth signup/skip-role-sync `true`, local
+   signup/insecure lookup/strict roles/server-admin assignment `false`, default
+   org `1`/Viewer, empty role/alias/org mappings, local form on and auto-login off.
+   If settings differ, stop before testing SSO. Share no passwords, tokens,
+   cookies, raw settings/logs or callback URLs.
+4. Verify **local admin `1` browser login** in a separate session; keep this
+   fallback available. Its Basic API check alone is not browser verification.
+5. In a fresh private browser, choose Zitadel and log in. At `/api/user`, record
+   the account ID/login/email; require **not local admin `1`**, `orgId: 1`,
+   `isGrafanaAdmin: false`, and the **actual Zitadel email**. Do not require ID `2`
+   or the old Auth0 email. At `/api/user/orgs`, require org `1` role **Viewer**
+   for the newly provisioned account. Stop on any collision or unexpected access.
+6. Verify intended dashboards load as Viewer. Log out of the test session and
+   perform a fresh Zitadel re-login; verify the same account, email and org/role.
+   Exercise session/token refresh and record the result; a surviving old
+   session alone is not proof. No admin logout of Auth0 user `2` is required.
 
-**Security tradeoff (accepted for this window):** email lookup is disabled by
-default for a reason; a matching address alone must not become a general
-account-adoption rule. The strict verified-email gate is evaluated before user
-linking in Grafana 11.4.1. Self-registration being disabled reduces exposure but
-is not a substitute for that gate or the approval recorded above. This
-temporarily admits only the migration user, not every org user; broader access
-can be restored after safe role mapping is reviewed, with email lookup still off.
+**Still pending:** deployment/settings, fresh Viewer login, dashboard access,
+local-admin browser fallback and fresh re-login/refresh. Mark complete only after
+these succeed; record unavailable outside-org tests as deferred, never passed.
+Future role mapping stays deferred and CP-1.2 media burn-in stays open.
 
-**Rollback is not just a Secret revert:** Grafana 11.4.1 updates the existing
-`oauth_generic_oauth` binding for user `2` to the Zitadel subject and OAuth-token
-data. Restoring Auth0 settings alone may then fail to find the old subject.
-The user chose not to take a pre-cutover database backup. If the binding has
-changed and rollback is needed, separately approve a restricted reverse-linking
-window against Auth0, verify user `2` is restored, then disable lookup again.
-Do not assume merely restoring Auth0 URLs/credentials reverses the database write.
-A failed later login step can still follow a successful binding update; inspect
-before retrying. Old sessions or cached auth lookups are not rollback proof.
-
-The backup decision is settled: **skip it**, as requested. The temporary
-email-linking window is approved and prepared in local values. Only the new,
-unused Secret has been created, per the user; no live security setting or user
-mapping has changed. Recovery via reverse linking, if needed, still requires
-its own reviewed procedure; do not improvise a rollback.
-Sources: [Grafana email lookup guidance](https://grafana.com/docs/grafana/latest/setup-grafana/configure-access/configure-authentication/#enable-email-lookup),
-[11.4.1 user linking](https://github.com/grafana/grafana/blob/v11.4.1/pkg/services/authn/authnimpl/sync/user_sync.go),
-[11.4.1 auth binding updates](https://github.com/grafana/grafana/blob/v11.4.1/pkg/services/login/authinfoimpl/store.go).
-
-#### C. Secret staged; review the paired cutover (next)
-
-**Staging complete according to the user:** OCI context was confirmed, then the
-user reported the creation command completed. The original Auth0/admin Secrets
-were not targeted by that command. No restart or deployment was requested.
-Step 1 is retained for reference; do not repeat it. Resume at commit review.
-
-1. **User only, target OCI.** Confirm `kubectl config current-context` prints
-   `oci` before writing. From the repository root, keep this pipeline intact
-   and shell tracing off; do not print or save Terraform's credential outputs:
-
-   ```bash
-   terraform -chdir=infrastructure/identity output -json |
-     jq -se 'if length != 1 then error("Expected one Terraform output object") else .[0] | {
-       apiVersion: "v1", kind: "Secret", type: "Opaque",
-       metadata: {name: "grafana-zitadel", namespace: "monitoring"},
-       stringData: {
-         GF_AUTH_GENERIC_OAUTH_CLIENT_ID: .zitadel_sso_client_ids.value.grafana,
-         GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET: .zitadel_sso_client_secrets.value.grafana
-       }
-     } | if all(.stringData[]; type == "string" and length > 0)
-         then . else error("Missing Grafana credentials") end end' |
-     kubectl --context=oci -n monitoring create -f -
-   ```
-
-   Missing/empty credentials abort the filter. `create` deliberately fails if
-   the Secret exists; inspect rather than overwrite it. **Safe stopping point:**
-   the Secret is unused until the values deploy. Do not restart Grafana. Keep
-   `grafana-auth0` and `grafana-admin-credentials` untouched.
-2. **Review local `applications/monitoring/values.yaml`.** It now selects
-   `grafana.envFromSecret: grafana-zitadel` and the provider name/URLs under
-   `grafana.grafana.ini.auth.generic_oauth`:
-
-   ```yaml
-   name: Zitadel
-   auth_url: https://homelab-jj4izt.eu1.zitadel.cloud/oauth/v2/authorize
-   token_url: https://homelab-jj4izt.eu1.zitadel.cloud/oauth/v2/token
-   api_url: https://homelab-jj4izt.eu1.zitadel.cloud/oidc/v1/userinfo
-   ```
-
-   PKCE, refresh tokens and `openid profile email offline_access` are preserved.
-   Local login is exposed and auto-login disabled. Global email lookup is
-   temporarily enabled with this exact Generic OAuth restriction:
-
-   ```yaml
-   allow_sign_up: false
-   role_attribute_path: >-
-     (email == 'greg.arendse@gmail.com' && email_verified == `true`) && 'Admin' || ''
-   role_attribute_strict: true
-   skip_org_role_sync: false
-   allow_assign_grafana_admin: false
-   ```
-
-   Leave `org_mapping` unset and do not introduce a Viewer fallback. This grants
-   organization Admin only, not server GrafanaAdmin.
-3. **Only deploy when there is time to finish section D in the same session.**
-   Confirm Secret creation, review the entire unpushed commit set, and obtain
-   approval for a dedicated commit containing only the monitoring values. Keep
-   migration docs separate and unrelated working-tree changes out. The user
-   pushes; auto-sync deploys. No commit or push is authorized by preparation alone.
-   A changed Secret reference triggers a rollout; do not restart early or run a
-   manual Helm upgrade that self-healing would undo.
-
-#### D. Verify linking, then close the temporary window (not yet started)
-
-1. **OCI, read-only:** verify `oci-monitoring` is `Synced` / `Healthy` at the
-   intended Git revision, then check rollout:
-
-   ```bash
-   kubectl --context=oci -n argocd get application oci-monitoring -o json |
-     jq '{sync: .status.sync.status, health: .status.health.status, revisions: .status.sync.revisions}'
-   kubectl --context=oci -n monitoring rollout status deployment/monitoring-grafana --timeout=120s
-   ```
-
-   Re-run the filtered settings request from section B. Expect email lookup
-   `true`, signup `false`, strict roles `true`, the exact verified-email rule,
-   no org mapping, role sync enabled and server-admin assignment disabled.
-   Do not test linking if these differ. Verify local admin browser login in a
-   separate session and keep it available.
-2. In a fresh private browser, choose Zitadel and log in. Visit `/api/user` on
-   Grafana: require `id: 2`, `orgId: 1`, expected email, and no server-admin grant.
-   Visit `/api/user/orgs`: require organization `1` has role `Admin`. If anything
-   differs, stop and inspect without deleting users or weakening the gate.
-3. **Immediately close the window:** set only
-   `grafana.grafana.ini.auth.oauth_allow_insecure_email_lookup` to `false`, then
-   review/approve a second dedicated values commit and user push. Do not combine
-   the two rollouts; the first fresh login must link before lookup is disabled.
-   Leave the strict gate and local login form intact. Repeat rollout/health and
-   the filtered settings check; require email lookup `false` on the live server.
-4. **User-run Grafana API write on OCI:** after confirming lookup is off,
-   invalidate all sessions for migrated user `2` (not local admin `1`):
-
-   ```bash
-   curl -q --basic --user admin --request POST --fail --silent --show-error \
-     --connect-timeout 10 --max-time 20 \
-     https://grafana.arendse.nom.za/api/admin/users/2/logout
-   ```
-
-   Enter the local admin password at the prompt; share no credentials/cookies.
-   Log in through Zitadel in a new private session with lookup off and verify
-   user `2`, org `1` and organization Admin again. Test session refresh and
-   record results; an existing session alone does not prove linking succeeded.
-   If linking fails, close the lookup window rather than leaving it enabled
-   between sessions, retain local admin access and review recovery separately.
-
-**Done when:** fresh Zitadel login works, the intended existing account/permissions
-are preserved as agreed, the intended admin has organization Admin, local
-break-glass access works, and refresh/session behavior is verified. Record any
-unavailable non-admin/outside-org test honestly; no automatic admin for all users.
-
-**Rollback:** revert only the paired values change and have the user push,
-restoring Auth0 URLs and `envFromSecret: grafana-auth0`. The old Secret stays
-intact. Follow the separately agreed restoration procedure if account mappings
-were changed. Local values are prepared; no rollout or account changes have
-been reported yet.
+**Rollback:** review reverting provider URLs and `envFromSecret` to the retained
+`grafana-auth0`, then user push. Lookup off means no deliberate user `2` rebinding
+in this flow, but prior attempts' binding effects are unknown: retain accounts
+and Secrets and review recovery separately if needed. Reverting the provider
+does **not** migrate a new account's preferences/permissions back to user `2`.
 
 ---
 

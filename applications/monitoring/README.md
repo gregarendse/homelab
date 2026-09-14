@@ -6,14 +6,13 @@ with auto-sync. Only the user runs cluster commands; confirm
 work GKE context or a manual Helm upgrade that ArgoCD will revert.
 
 Zitadel migration is tracked in `applications/zitadel/MIGRATION.md` (CP-2.1).
-**Local values now prepare the approved temporary linking window; not deployed.**
-The user confirmed OCI context and creation of the unused `grafana-zitadel`
-Secret in `monitoring` and asked to complete the cutover. Documentation and
-values will be committed separately; deployment and login verification remain
-pending and only the user pushes.
-Pushing to `master` deploys and enables global email lookup: complete the linking
-and a second rollout disabling lookup in the same session. Do not push this
-change as incidental work.
+**Minimal Zitadel login is in values commit `66ed660`; publication is approved,
+but deployment and login verification are pending.** The user chose working
+SSO first and role mapping later. The new configuration
+provisions authenticated Zitadel users as Viewer, reads standard profile/email
+claims and disables insecure email lookup. No custom roles or account aliases
+are required. Last verified live settings still had the failing email-role rule
+and lookup enabled; only a user-controlled push/OCI rollout changes that.
 
 ## Grafana admin credentials
 
@@ -41,19 +40,21 @@ HTTP Basic auth as documented in CP-2.1. The hidden login form does not itself
 disable Basic auth. Do not share the password or assume the Secret proves that
 it still matches the persisted account.
 
-## Grafana SSO (Zitadel cutover prepared; live verification pending)
+## Grafana SSO (minimal configuration prepared; login verification pending)
 
-The last user-verified deployment uses Auth0. Local `values.yaml` now selects
-Zitadel using `auth.generic_oauth` and `grafana.envFromSecret: grafana-zitadel`.
-The new Secret uses the `grafana` entry in Terraform's `zitadel_sso_client_ids`
-and `zitadel_sso_client_secrets` outputs; credentials stay out of Git. Follow
-CP-2.1 section C to stage it without printing credentials or restarting Grafana.
-Keep `grafana-auth0` and `grafana-admin-credentials` untouched.
+The live provider is Zitadel via `auth.generic_oauth` and
+`grafana.envFromSecret: grafana-zitadel`; successful login is still unverified.
+The Secret uses the `grafana` entry in Terraform's `zitadel_sso_client_ids` and
+`zitadel_sso_client_secrets` outputs; credentials stay out of Git.
+Keep `grafana-auth0`, `grafana-admin-credentials`, and local server-admin user
+`1` intact.
 
 ### Legacy Auth0 credentials (retained for recovery)
 
-The following documents the existing Auth0 Secret, not a migration step. Do not
-recreate it or restart Grafana while merely staging the new Zitadel Secret.
+The following is **historical Auth0 setup**, not the current deployment or a
+migration step. Preserve the existing Secret; do not recreate it. Restoring
+Auth0 requires a reviewed rollback using its known-good settings. The new
+minimal flow does not deliberately rebind the existing Auth0 account.
 
 Grafana auto-maps environment variables named `GF_<SECTION>_<KEY>` onto its
 config, so the Secret keys must be named exactly as below — they populate
@@ -65,77 +66,87 @@ kubectl --context=oci -n monitoring create secret generic grafana-auth0 \
   --from-literal=GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET='<auth0-client-secret>'
 ```
 
-Only when rotating credentials for the active provider, restart Grafana after
-confirming context `oci` (not needed for staging an unused Secret):
+Historical restart command for active-provider credential rotation only;
+confirm context `oci` first. Do not run it for the retained, inactive Auth0 Secret:
 
 ```bash
 kubectl --context=oci -n monitoring rollout restart deploy/monitoring-grafana
 ```
 
-### Auth0 application setup
+### Historical Auth0 application setup
 
-> `<BASE_DOMAIN>` is your public base domain; `<AUTH0_DOMAIN>` is the Auth0 tenant
-> domain (e.g. `<tenant>.<region>.auth0.com`). Real values live in `values.yaml`.
+> `<BASE_DOMAIN>` is the public base domain; `<AUTH0_DOMAIN>` is the former Auth0
+> tenant domain (e.g. `<tenant>.<region>.auth0.com`). Current values select Zitadel.
 
-Create a **Regular Web Application** in the Auth0 tenant (`<AUTH0_DOMAIN>`)
-and configure:
+The former Auth0 setup used a **Regular Web Application** with:
 
 - **Allowed Callback URLs:** `https://grafana.<BASE_DOMAIN>/login/generic_oauth`
 - **Allowed Logout URLs:** `https://grafana.<BASE_DOMAIN>/login`
-- **Allow Offline Access** (on the API): required because
-  `use_refresh_token: true` / the `offline_access` scope are enabled in
-  `values.yaml`.
+- **Allow Offline Access** (on the API): used with refresh tokens and the
+  `offline_access` scope.
 
-The `client_id` / `client_secret` from this application populate the
-`grafana-auth0` Secret above.
+Its `client_id` / `client_secret` populate the retained `grafana-auth0` Secret.
 
-### Temporary linking restriction
+### Minimal behavior
 
-The prepared values replace Auth0's substring rule with an exact email match
-for `greg.arendse@gmail.com` **and boolean `email_verified: true`**. Only that
-identity receives organization `Admin`; all others produce no role and are
-rejected by `role_attribute_strict: true`. Signup is disabled, role sync stays
-enabled, no `org_mapping` is configured, and `allow_assign_grafana_admin: false`
-prevents this rule from granting server-wide GrafanaAdmin.
+- Use standard `openid profile email offline_access` claims, with PKCE and
+  refresh tokens. No personal IDs, custom attribute aliases or role expressions.
+- `auth.generic_oauth.allow_sign_up: true` lets an authenticated Zitadel identity
+  provision a Grafana account. This is separate from Zitadel self-registration.
+- `[users] allow_sign_up: false` blocks local Grafana self-signup. New OAuth
+  accounts join the default organization (`1`) as **Viewer**.
+- `skip_org_role_sync: true` defers IdP role mapping. A local administrator can
+  adjust organization roles in Grafana without subsequent SSO logins resetting
+  them. `allow_assign_grafana_admin: false` prevents SSO server-admin grants.
+- `oauth_allow_insecure_email_lookup: false` stays off. No temporary linking
+  window or extra lookup-off rollout is needed for this approach.
+- Keep the local login form enabled and OAuth auto-login off for recovery.
 
-This deliberately restricts Grafana login to the migration user. Do not add a
-Viewer fallback during linking. Broader org-user access is a later decision.
+The Zitadel project currently admits eligible `arendse` users without individual
+role assignments. Self-registration is disabled according to the user; external
+project grants are not configured. Any identity admitted by that project can
+provision a Viewer account. Outside-org denial is deferred, not demonstrated.
+Revisit these controls before onboarding users or enabling self-registration.
 
-### Rollout flags
+### Existing accounts and verification
 
-The last user-verified Auth0 configuration hides the login form and enables
-OAuth auto-login. The prepared values set both `auth.disable_login_form` and
-`auth.oauth_auto_login` to `false` so local login is available during migration.
-The local admin API credentials have been confirmed; test the browser fallback
-after the GitOps rollout. `/login?disableAutoLogin=true` alone cannot restore a
-disabled form.
+The first successful Zitadel login normally creates a **separate Grafana user**
+with the actual Zitadel email. Preserving Auth0 user `2` as the SSO account is no
+longer a prerequisite; keep it and local admin `1` untouched. Old preferences,
+stars and permissions are not automatically migrated. Viewer access to existing
+organization dashboards depends on their permissions; use local admin to adjust
+access if needed.
 
-### Existing accounts and planned Secret handling
+After the reviewed values commit and user push, verify `oci-monitoring` is
+Synced/Healthy at the intended revision and the Grafana rollout completes. Then:
 
-The new Zitadel `sub` differs from Auth0's. Grafana generic OAuth does not
-normally link an existing account by email when
-`oauth_allow_insecure_email_lookup` is off (the default in Grafana 11.4.x).
-A same-email account can therefore collide rather than migrate automatically.
-The user confirmed Grafana 11.4.1, existing SSO user `2` / org `1`, local
-server-admin `1`, and the exact verified Zitadel email, and approved temporary
-linking. Only Generic OAuth and Basic auth were enabled in the live inventory.
+1. Confirm local admin browser login works (Basic-auth API access already did).
+2. Use a fresh private Zitadel login; check `/api/user` has the actual Zitadel
+   email and `isGrafanaAdmin: false`. Do not require user ID `2`.
+3. Check `/api/user/orgs` reports org `1` and Viewer for a newly provisioned user;
+   confirm dashboard access, sign out/in again and verify session refresh.
 
-The prepared values enable `auth.oauth_allow_insecure_email_lookup` **only for
-the linking window**. After fresh Zitadel login preserves user `2` / org `1`,
-set it to `false` in a separate dedicated values commit and rollout. Confirm it
-is off, revoke user `2`'s sessions using the admin API, and test fresh login
-again. Keep the verified-email restriction and local login available. Do not
-leave lookup enabled between sessions; see CP-2.1 section D for commands.
+Stop on an email/login uniqueness collision rather than enabling insecure
+lookup, deleting users or changing either existing email. See CP-2.1 for commands
+and progress. No successful minimal-login result has been reported yet.
 
-The user declined a database backup. Linking changes the existing generic-OAuth
-binding: Secret/config rollback alone may not restore Auth0 login. If recovery
-is needed, retain local admin access and separately review a restricted
-reverse-linking window against Auth0. Do not delete user `2` or improvise DB
-edits.
+### Deferred roles and recovery
+
+The user created `admin`, `editor`, `viewer` roles in the Zitadel Grafana project;
+their user assignment is tentative. Leave those roles alone; they are not needed
+for this minimal flow. Later, review project-role mapping as its own checkpoint.
+
+The database backup was declined. Retain the Auth0 Secret and existing accounts.
+For rollback, restore known-good Auth0 settings and its Secret reference—not
+merely the previous failing Zitadel role rule. A new Zitadel account's preferences
+do not migrate back automatically. If any earlier attempt altered a binding,
+inspect it using local admin before separately reviewing recovery; no DB surgery.
 
 ## Ingress basic auth (legacy)
 
-To access Grafana, you need to populate the `grafana-basic-auth` secret in the `monitoring` namespace.
+Historical ingress basic-auth setup only; this is not required for the current
+Zitadel flow. The former setup used the `grafana-basic-auth` Secret in the
+`monitoring` namespace.
 
 The secret should contain a `users` key with htpasswd formatted entries.
 
@@ -158,6 +169,5 @@ data:
   users: <result-from-above>
 ```
 
-**Note:** This is a temporary measure until a proper OIDC provider is integrated.
-
-ToDo: Clean up, removed the `monitoring-auth` middleware helm chart, just apply it manually.
+The `monitoring-auth` middleware Helm chart was removed. These legacy notes are
+not instructions to re-enable ingress basic auth during the Zitadel migration.
