@@ -59,14 +59,16 @@ grafana:
     server:
       root_url: https://grafana.arendse.nom.za
 
+    users:
+      # Provision through Zitadel only, with least-privilege access to start.
+      allow_sign_up: false
+      auto_assign_org: true
+      auto_assign_org_role: Viewer
     auth:
-      # Keep local admin login available throughout the provider migration.
+      # Keep local admin available; do not merge existing users by email.
       disable_login_form: false
       oauth_auto_login: false
-      # TEMPORARY CP-2.1 linking window: set false in a separate rollout as soon
-      # as Zitadel login preserves user 2 / org 1. Do not leave enabled overnight.
-      # Global setting; safe use depends on the strict verified-email gate below.
-      oauth_allow_insecure_email_lookup: true
+      oauth_allow_insecure_email_lookup: false
     auth.generic_oauth:
       enabled: true
       name: Zitadel
@@ -78,14 +80,11 @@ grafana:
       use_pkce: true
       use_refresh_token: true
       # Credentials come only from grafana-zitadel via GF_AUTH_GENERIC_OAUTH_*.
-      # Preserve the existing account; do not create a second user for Zitadel.
-      allow_sign_up: false
-      # No Viewer fallback during linking: reject every nonmatching identity
-      # before email lookup. Admin here is org Admin, never server GrafanaAdmin.
-      role_attribute_path: >-
-        (email == 'greg.arendse@gmail.com' && email_verified == `true`) && 'Admin' || ''
-      role_attribute_strict: true
-      skip_org_role_sync: false
+      allow_sign_up: true
+      # Defer IdP role mapping; new users start as Viewer. Local admin can change
+      # their org roles in Grafana without those changes being reset on login.
+      role_attribute_strict: false
+      skip_org_role_sync: true
       allow_assign_grafana_admin: false
 
   additionalDataSources:
