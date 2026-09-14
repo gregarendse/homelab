@@ -9,6 +9,7 @@ This directory contains a RouterOS script (`check_dns_failover.rsc`) for MikroTi
 - **Direct DNS Querying**: Queries Pi-hole directly using RouterOS `[:resolve <domain> server=<piholeIP>]`.
 - **Retry Mechanism**: Attempts multiple resolution tries before declaring Pi-hole down to prevent false-positive failovers during momentary hiccups.
 - **Automatic Recovery**: Automatically reverts DHCP DNS configuration to Pi-hole once health check succeeds again.
+- **Email Alerts**: Sends email notifications on failover and recovery events using RouterOS `/tool e-mail`.
 - **State Aware**: Avoids unnecessary DHCP network writes and log noise when DNS state remains unchanged.
 - **Logging**: Emits system log notifications (`:log warning` and `:log info`) on state transitions.
 
@@ -16,6 +17,15 @@ This directory contains a RouterOS script (`check_dns_failover.rsc`) for MikroTi
 
 ## Prerequisites & Configuration
 
+### 1. Router Email Configuration
+To receive email notifications when Pi-hole fails or recovers, ensure RouterOS email tool is configured under `/tool e-mail`:
+
+```routeros
+/tool e-mail
+set server=smtp.example.com port=587 tls=yes from=router@example.com user=smtp_user password=smtp_password
+```
+
+### 2. Script Parameters
 Open `check_dns_failover.rsc` and adjust the local variables at the top to match your network setup:
 
 ```routeros
@@ -25,6 +35,10 @@ Open `check_dns_failover.rsc` and adjust the local variables at the top to match
 :local dhcpNetworkAddress "192.168.1.0/24"# Target DHCP server network address range
 :local maxRetries 3                      # Number of retries before switching to fallback DNS
 :local retryDelay 1s                     # Delay between retries
+
+# Email Notification Settings
+:local emailSend true                    # Set to true to enable email notifications
+:local emailAddress "admin@example.com"  # Email address to receive notifications
 ```
 
 ---
@@ -84,11 +98,12 @@ Check system logs to verify:
 /log print where message~"Pi-hole Check"
 ```
 
-### Test Failover
+### Test Failover & Email Alert
 1. Temporarily pause Pi-hole DNS or block access to `piholeIP`.
 2. Wait for the scheduler run (or execute manually).
 3. Verify DHCP server network DNS setting has changed to your fallback DNS (`1.1.1.1`):
    ```routeros
    /ip dhcp-server network print
    ```
-4. Unpause Pi-hole and verify DHCP server network DNS setting restores to `piholeIP`.
+4. Verify email notification is received for the failure alert.
+5. Unpause Pi-hole and verify DHCP server network DNS setting restores to `piholeIP` and recovery email is received.
