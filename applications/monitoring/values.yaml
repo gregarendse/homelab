@@ -1,3 +1,20 @@
+nodeExporter:
+  enabled: true
+
+additionalPrometheusRulesMap:
+  custom-node-alerts:
+    groups:
+      - name: host-node-disk-alerts
+        rules:
+          - alert: NodeDiskSpaceFillingUp
+            expr: (node_filesystem_avail_bytes{fstype=~"ext4|xfs"} / node_filesystem_size_bytes{fstype=~"ext4|xfs"}) < 0.30
+            for: 10m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Host node disk space is above 70% full"
+              description: "Mountpoint {{ $labels.mountpoint }} on {{ $labels.instance }} has less than 30% free space remaining."
+
 prometheus:
   prometheusSpec:
     retention: 3d
