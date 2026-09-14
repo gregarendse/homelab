@@ -111,14 +111,6 @@ apps:
       valueFiles:
         - applications/monitoring/values.yaml
 
-  - name: monitoring-auth
-    type: path
-    namespace: monitoring
-    helm:
-      kind: path
-      path: applications/monitoring
-    # This will apply auth.yaml
-
   - name: mktxp
     type: rendered
     namespace: monitoring
