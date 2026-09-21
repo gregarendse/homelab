@@ -4,7 +4,7 @@ Self-hosted autonomous AI agent by [Nous Research](https://nousresearch.com),
 deployed as a Kubernetes workload on the OCI cluster.
 
 - **Docs:** <https://hermes-agent.nousresearch.com/docs>
-- **Image:** `nousresearch/hermes-agent:latest` (multi-arch, includes `linux/arm64`)
+- **Image:** `nousresearch/hermes-agent:v2026.9.14` (multi-arch, includes `linux/arm64`)
 - **Ports:** `8642` (gateway / OpenAI-compatible API), `9119` (web dashboard)
 
 ---
