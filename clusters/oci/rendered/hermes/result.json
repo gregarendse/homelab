@@ -10,7 +10,7 @@
           "kubenix/project-name": "kubenix"
         },
         "labels": {
-          "kubenix/hash": "dd3683823078582e7bb99446b5cfbb6ee3ef5951"
+          "kubenix/hash": "2158b0fd5ca25484ba2836c4bc1df33a2c31ab2b"
         },
         "name": "hermes"
       }
@@ -25,7 +25,7 @@
         },
         "labels": {
           "app": "hermes",
-          "kubenix/hash": "dd3683823078582e7bb99446b5cfbb6ee3ef5951"
+          "kubenix/hash": "2158b0fd5ca25484ba2836c4bc1df33a2c31ab2b"
         },
         "name": "hermes",
         "namespace": "hermes"
@@ -199,7 +199,7 @@
         },
         "labels": {
           "app": "hermes",
-          "kubenix/hash": "dd3683823078582e7bb99446b5cfbb6ee3ef5951"
+          "kubenix/hash": "2158b0fd5ca25484ba2836c4bc1df33a2c31ab2b"
         },
         "name": "hermes-config",
         "namespace": "hermes"
@@ -215,7 +215,7 @@
         },
         "labels": {
           "app": "hermes",
-          "kubenix/hash": "dd3683823078582e7bb99446b5cfbb6ee3ef5951",
+          "kubenix/hash": "2158b0fd5ca25484ba2836c4bc1df33a2c31ab2b",
           "recurring-job-group.longhorn.io/friday-backup": "enabled",
           "recurring-job.longhorn.io/source": "enabled"
         },
@@ -244,7 +244,7 @@
         },
         "labels": {
           "app": "hermes",
-          "kubenix/hash": "dd3683823078582e7bb99446b5cfbb6ee3ef5951"
+          "kubenix/hash": "2158b0fd5ca25484ba2836c4bc1df33a2c31ab2b"
         },
         "name": "hermes",
         "namespace": "hermes"
@@ -273,7 +273,7 @@
   ],
   "kind": "List",
   "labels": {
-    "kubenix/hash": "dd3683823078582e7bb99446b5cfbb6ee3ef5951",
+    "kubenix/hash": "2158b0fd5ca25484ba2836c4bc1df33a2c31ab2b",
     "kubenix/k8s-version": "1.28",
     "kubenix/project-name": "kubenix"
   }
