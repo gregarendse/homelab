@@ -60,7 +60,7 @@ grafana:
       root_url: https://grafana.arendse.nom.za
 
     users:
-      # Provision through Zitadel only, with least-privilege access to start.
+      # Keep local signup off; the OAuth policy below overrides this default role.
       allow_sign_up: false
       auto_assign_org: true
       auto_assign_org_role: Viewer
@@ -81,10 +81,12 @@ grafana:
       use_refresh_token: true
       # Credentials come only from grafana-zitadel via GF_AUTH_GENERIC_OAUTH_*.
       allow_sign_up: true
-      # Defer IdP role mapping; new users start as Viewer. Local admin can change
-      # their org roles in Grafana without those changes being reset on login.
+      # TEMPORARY: every successful Zitadel login receives organization Admin.
+      # Replace with role-based mapping before adding users, enabling registration
+      # or granting another org access. This is not server-wide GrafanaAdmin.
+      role_attribute_path: "'Admin'"
       role_attribute_strict: false
-      skip_org_role_sync: true
+      skip_org_role_sync: false
       allow_assign_grafana_admin: false
 
   additionalDataSources:
