@@ -11,8 +11,9 @@ checks look good. **CP-0.7 rollout and fresh login passed on trinity**, also
 reported by the user. The PoC now uses `media_poc` in the `media` project.
 The user confirmed normal Sonarr/Pi-hole access and explicitly accepted deferring
 outside-org denial testing in this single-user setup. **CP-0.7 is complete with
-that deferral; CP-1.1 on trinity is being prepared, not deployed.** Outside-org denial is
-not proven; revisit it before adding users or changing access policies.
+that deferral; CP-1.1 on trinity is complete and CP-1.2 burn-in is in progress.**
+Outside-org denial is not proven; revisit it before adding users or changing
+access policies.
 Project IDs and results are recorded in `applications/zitadel/MIGRATION.md`.
 The existing `zitadel_project.homelab` and `zitadel_application_oidc.app` (four
 legacy clients) remain intact, including the previous PoC rollback credentials.
@@ -44,20 +45,47 @@ All four new projects use `org_id = var.zitadel_org_id`,
 `project_role_assertion = true`. With **no project grants to external orgs**, all
 users in `arendse` may log in initially, without roles or per-user assignments.
 No project grants, roles, assignments, policy resources or Kubernetes providers
-are added. Role assertion does not itself grant app permissions.
+are added. The user deferred Terraform role adoption and selected a temporary
+Grafana Helm policy granting organization Admin to every successful Zitadel login.
+The user approved committing/pushing that policy; its OCI rollout and Admin
+access still need user verification. No Terraform changes are required.
 
 **Self-registration must remain disabled.** The user reports it is disabled;
 this has not been independently verified, and Terraform does not manage that
 policy. Future users added to `arendse` automatically gain login to all four
 projects. **Tighten access before adding users or re-enabling signup**; defer
-per-project users/role checks until wanted. App RBAC remains separate: org-wide
-login does **not** mean everyone is a Grafana or ArgoCD admin.
+per-project users/role checks until wanted. App RBAC remains separate. The
+temporary Grafana policy is an explicit exception: every admitted Zitadel user
+gets **Main Org Admin**, never server-wide GrafanaAdmin. ArgoCD is unchanged.
 
 The legacy `homelab` project keeps both checks disabled; its existing behavior
 is not evidence of the new org boundary. Follow `applications/zitadel/MIGRATION.md`
 for fresh-session tests: allowed org login, unauthenticated challenge, outside-org
 denial when an account is available, and separate app RBAC. Record any unavailable
 negative test honestly, not as a pass; a within-org user without a role is allowed.
+
+### Grafana: temporary Admin policy; role adoption deferred
+
+`applications/monitoring/values.yaml` now uses the JMESPath constant
+`role_attribute_path: "'Admin'"` with `skip_org_role_sync: false`. Every successful
+Zitadel login gets organization Admin, regardless of assigned project roles.
+`allow_assign_grafana_admin: false` and email lookup remain off; local admin stays
+available. This needs **no Terraform apply, grant ID, custom claim or Action**.
+
+The agent's untracked `grafana-roles.tf` draft was removed before any import or
+apply. The manually created Zitadel roles/assignments remain untouched. No role
+or user-grant resource is managed by this root; `grafana_greg_user_grant_id` is
+not required. The policy still lives in code, in Helm values.
+
+**Tighten this policy before adding users, enabling registration or granting
+another organization access.** All current/future identities admitted to this
+Grafana integration get Admin under the temporary policy. Outside-org denial
+remains deferred, not verified. The constant mapping is not itself an org check.
+
+Later, import the existing project roles and complete user assignments into
+Terraform and replace the constant with native claim mapping in Helm. That is a
+separate checkpoint, not a prerequisite for finishing this cutover. Follow
+CP-2.1 in `applications/zitadel/MIGRATION.md` for publication and live verification.
 
 ## 1. Create a Zitadel service user + PAT
 
@@ -111,8 +139,10 @@ Do not commit plan files or expose secrets.
 **The user reported a successful CP-0.6 apply: 10 added, 0 changed, 0 destroyed**
 and confirmed the requested post-apply checks look good. CP-0.6 is complete on
 that basis; the agent did not independently run those checks. Do not repeat the
-creation step. A subsequent plan should report **No changes**. This apply did
-not switch workloads. No initial roles/assignments are required;
+creation step. A subsequent plan should report **No changes** absent other
+intentional identity edits; the deferred Grafana role-adoption draft was removed
+unapplied. That initial apply did not switch workloads. No initial
+roles/assignments are required;
 self-registration must remain disabled and no external project grants should
 exist. CP-0.7 has now verified the new `media_poc` rollout/login on **trinity**;
 normal Sonarr/Pi-hole access and deferral of outside-org testing are confirmed
@@ -163,20 +193,24 @@ production; identical Grafana/ArgoCD keys in the legacy maps still select the ol
 ## 4. Migrating off Auth0 (later)
 
 Follow `applications/zitadel/MIGRATION.md`, not a direct issuer-only promotion.
-**CP-1.1 preparation is in progress on trinity:** CP-0.5–0.7 are complete, with
-the outside-org denial test explicitly deferred by the user. Local production
-values now select `oauth2-proxy-zitadel-media` and the Zitadel issuer together.
-The user confirmed production preflight: context `trinity`, one ready replica,
-Auth0 issuer and the existing `oauth2-proxy` Secret. The user explicitly chose
-to skip the exported backup; rollback relies on preserving that original Secret.
-The user has now reported `secret/oauth2-proxy-zitadel-media created` in
-namespace `oauth2-proxy`, not the PoC namespace. Do not repeat its creation.
-Leave the existing Auth0 `oauth2-proxy` Secret intact. The destination Secret is
-ready, and the user approved separate local commits for the already-applied
-identity code/docs and the single-file cutover. After those commits, the next
-deployment action is the user's push; rollout and fresh production login still
-need verification. Preparation can safely pause before that push. The agent
-handles only local commits, not production deployments or pushes.
+**CP-1.1 is complete on trinity; CP-1.2 burn-in is in progress.** The user created
+`oauth2-proxy-zitadel-media` in namespace `oauth2-proxy` and pushed the paired
+issuer/Secret-reference change. Current Git history identifies `0fc08bd`
+(identity/docs) and `884fc5f` (only production proxy values); their original
+local IDs were `e6eeabc` and `fb35bde`.
+
+The user confirmed fresh incognito Zitadel login back to Sonarr, ArgoCD
+`Synced` / `Healthy` at chart `10.7.0` and Git revision
+`884fc5f0428c8f6d580b4e944d3257c08d2fd6ed`, and a successful deployment rollout.
+The agent checked that revision's values and confirmed they match the original
+cutover settings. Use `884fc5f` if reverting the cutover. The agent did not push
+or run cluster commands.
+
+No further auth changes are needed during a few days of normal media-app use.
+Keep the original Auth0 `oauth2-proxy` Secret intact for rollback; an exported
+backup was explicitly declined. Outside-org denial is explicitly deferred, not
+passed. After stable burn-in, CP-2.1 migrates Grafana on **oci**. Do not repeat
+the production Secret creation or cutover commit.
 
 Callbacks are prepared in code; apply must register the new clients first.
 Cut over one integration at a time with matching issuer/Secret changes and fresh

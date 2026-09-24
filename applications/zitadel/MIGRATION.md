@@ -44,8 +44,10 @@ Update this as you go so "future you" knows where to resume.
   `Healthy` at Git revision `884fc5f0428c8f6d580b4e944d3257c08d2fd6ed` (chart
   `10.7.0`), and a successful deployment rollout. The agent verified the values
   at that Git revision; runtime results are user-supplied.
-- **Latest decision:** separate `media`, `pihole`, `argocd` and `grafana`
-  projects inside `arendse`, initially allowing all org users without individual
+- **Latest decision:** temporary Main Org **Admin for every successful Zitadel
+  Grafana login**, controlled by a constant OAuth expression; role mapping and
+  Terraform adoption deferred again. Separate `media`, `pihole`, `argocd` and
+  `grafana` projects still admit eligible `arendse` users without individual
   assignments. Self-registration is disabled **according to the user; not
   independently verified**. This remains approved untracked work.
 - **Last completed:** CP-1.1 — production media proxy cutover and verification.
@@ -55,16 +57,20 @@ Update this as you go so "future you" knows where to resume.
   Make no further auth changes during burn-in. Check login/session refresh and
   access across the protected media apps; keep Auth0's original Secret intact.
   The user asked to keep going, so CP-2.1 for Grafana on **oci** is proceeding
-  alongside burn-in. The last user-supplied Grafana configuration has the old
-  strict email-based role rule and lookup `true`; login fails. Neither
-  checkpoint is complete; exact live sync/health/revision has not been supplied.
-- **Next action (OCI / CP-2.1):** publish and verify minimal Zitadel SSO from
-  values commit `66ed660`, with Viewer auto-provisioning, standard email claims,
-  skipped role sync and lookup `false`. The user explicitly requested the push.
-  Role mapping and user `2` association are no longer prerequisites; a new
-  account using the actual Zitadel email is expected. OCI rollout/settings,
-  fresh login, Viewer access, local-admin browser fallback and re-login/refresh
-  remain unverified. Do not mark the checkpoint complete on push alone.
+  alongside burn-in. Grafana SSO and local-admin browser login now work per the
+  user after they removed a conflicting account. The personal SSO profile is
+  **Main Org Viewer; Grafana Admin No**, despite a user-reported Zitadel `admin`
+  assignment. Neither checkpoint is complete; exact OCI sync/health/revision,
+  rollout and refresh evidence have not been supplied.
+- **Next action (OCI / CP-2.1):** the user approved separate documentation/values
+  commits and a push to `master` for `role_attribute_path: "'Admin'"`. Lookup
+  stays `false`; every successful Zitadel login, including no-role users,
+  receives Main Org **Admin**, not server **GrafanaAdmin**. No grant ID or
+  Terraform action is required. Publication is not deployment verification:
+  the user must verify exact synced revision/health, rollout, live settings, fresh Main Org
+  **Admin** with **Grafana Admin No**, dashboards and re-login/refresh.
+  Deleted/current SSO numeric IDs are unknown; do not assume user `2`'s fate.
+  Do not mark the checkpoint complete on login or push alone.
 - **Current commit IDs:** `0fc08bd` (identity/docs) and `884fc5f` (single-file
   cutover) in the current Git history. Their earlier local IDs were `e6eeabc`
   and `fb35bde`. The agent compared the production values at `884fc5f` and
@@ -86,7 +92,7 @@ Update this as you go so "future you" knows where to resume.
 | 0.7 | PoC login and smoke checks passed; outside-org test deferral accepted | ☑ |
 | 1.1 | Production Zitadel login, ArgoCD health and rollout verified | ☑ |
 | 1.2 | In progress: normal `*arr` use for a few days; retain Auth0 rollback | ☐ |
-| 2.1 | Grafana on OCI: minimal Viewer SSO prepared locally; deploy/login/fallback/refresh pending, roles deferred | ☐ |
+| 2.1 | Grafana on OCI: SSO/local-admin browser login confirmed; constant Admin publication approved; sync/health/rollout/Admin/refresh pending; mapping/adoption deferred | ☐ |
 | 3.1 | Cut over ArgoCD (trinity) | ☐ |
 | 4.1 | Cut over ArgoCD (OCI) | ☐ |
 | 5.1 | Move Pi-hole to its dedicated project/application (OCI) | ☐ |
@@ -178,27 +184,41 @@ Context worth remembering between sessions.
   `org_id = var.zitadel_org_id`, `has_project_check = true`,
   `project_role_check = false` and `project_role_assertion = true`. With no
   project grants to external orgs, login is limited to users in `arendse`, but
-  does not require project roles or per-user assignments. No role/assignment,
-  project-grant, policy or Kubernetes-provider Terraform resources are added.
-  Grafana roles were created manually; see CP-2.1. Outside-org denial remains
+  does not require project roles or per-user assignments. The initial rollout
+  added no role/assignment, project-grant, policy or Kubernetes-provider resources.
+  CP-2.1 defers Grafana role/grant adoption again; console roles/grants remain
+  untouched and roles are not a login requirement. Outside-org denial remains
   deferred and unverified, not a demonstrated access-boundary test.
 - **Self-registration must remain disabled.** The user reports it is disabled;
   this has not been independently verified and Terraform does not manage it.
   Future users added to `arendse` automatically gain login to all four projects.
-  **Follow-up: tighten access before adding users or re-enabling signup.** Defer
-  per-project user restrictions until wanted, then design explicit assignments
-  and role checks. Separate app RBAC still applies now: org-wide login does
-  **not** mean everyone is a Grafana or ArgoCD administrator.
-- **Grafana: minimal working SSO first; roles later.** Supersede the user `2`
-  alias/linking and strict project-role plans. Eligible Zitadel users may
-  auto-provision as Viewer in default org `1`, using their actual Zitadel email;
-  preserving user `2` is not guaranteed. Skip role sync to preserve local role
-  assignments; no role mapping, claim aliases or insecure email lookup.
-  OAuth signup is enabled, local self-signup disabled. Retain local admin `1`,
-  Auth0 user `2` and old Secrets; intentionally delete/modify no existing user or
-  email. Stop on uniqueness collisions: no automatic alias/merge or DB surgery.
-  A DB backup was explicitly declined. Dashboard access, browser fallback and
-  fresh re-login/refresh remain pending; future roles are not a prerequisite.
+  **Follow-up: tighten access before adding users, re-enabling signup or granting
+  external orgs access.** CP-2.1's temporary Grafana policy will make **all current
+  and future admitted users Main Org Admin** on login. This is not server
+  GrafanaAdmin and does not change ArgoCD RBAC. Replace the constant with narrower
+  mapping and review per-project admission before expanding access.
+- **Grafana: login works; temporary constant Admin publication is approved.** The
+  user chose “making everyone admin for now” instead of role mapping. Minimal
+  Viewer provisioning (`66ed660`) and the intermediate native-role mapping plan
+  are superseded by `role_attribute_path: "'Admin'"` under generic OAuth.
+  The user approved separate docs/values commits and a push; live rollout is
+  not yet verified. The expression ignores role claims: no-role users and a user labelled `ZITADEL Admin` get the same Main Org
+  Admin on next successful login after deployment, never a server-admin grant.
+  Standard scopes, OAuth signup on, local signup off, lookup off and local
+  `auto_assign_org_role=Viewer` stay unchanged; OAuth overrides Viewer.
+  Role sync overwrites manual org roles; local admin and anonymous access are
+  unaffected. No account aliases, hardcoded email or personal `sub`.
+  Role mapping and Terraform adoption are **deferred again**; no grant ID or
+  Terraform action is needed. Cleanup is only the agent's untracked, unapplied
+  `grafana-roles.tf` draft and its header reference; no live plan/import/apply
+  was ever run for that draft, and console roles/grants are untouched.
+  The user deleted a conflicting account themselves; the agent deleted none.
+  Deleted/current SSO IDs are unknown, including whether user `2` still exists.
+  Keep local admin `1` and old Secrets. No further deletion, automatic merging
+  or DB surgery. The declined DB backup is settled; rollback cannot recover
+  deleted metadata. Local-admin browser login is confirmed; new Admin-role
+  verification, dashboard access and fresh re-login/refresh remain pending.
+  See CP-2.1 for the later least-privilege mapping/adoption follow-up.
 
 ---
 
@@ -317,9 +337,10 @@ kubectl -n oauth2-proxy-zitadel rollout restart deploy/oauth2-proxy-zitadel
   `project_role_check = false`, `project_role_assertion = true`. All org users
   are allowed without initial roles or assignments; role assertion does not
   grant permissions or require a role. Self-registration must stay disabled.
-  Grafana and ArgoCD must still map identities/claims to local permissions;
-  login alone must not grant admin. Per-project user restrictions are deferred
-  until wanted, and must be revisited before onboarding users or opening signup.
+  The initial decision kept app permissions separate from login. CP-2.1 now
+  proposes a temporary Grafana-only exception: Main Org Admin for every admitted
+  login; ArgoCD RBAC is unchanged. Per-project restrictions and narrower Grafana
+  mapping must be revisited before onboarding, opening signup or external grants.
 - Sonarr and its peers currently share one proxy policy. Per-media-app access
   would require separate enforcement, not just more Zitadel registrations.
   Proxy protection applies only to requests routed through it, not direct
@@ -694,75 +715,100 @@ burn-in remains open. Do not infer stability just because preparation continues.
 
 ### CP-2.1 — Cut over Grafana
 
-**Minimal working SSO first; role mapping deferred. Target cluster: oci.**
-The minimal values are committed as `66ed660`, and the user explicitly requested
-publication to `master`. Deployment and login verification remain pending.
-Last user-supplied live settings had the old strict email-based role rule and
-global email lookup `true`; login failed. Exact live ArgoCD sync/health/revision
-has not been supplied. This checkpoint is **not complete**, and media burn-in
-remains open.
+**Login confirmed; temporary Admin publication approved. Target cluster: oci.**
+After removing a conflicting Grafana account themselves, the user confirmed SSO
+and local-admin browser login. The last observed SSO profile was **Main Org
+Viewer; Grafana Admin No**. The user now wants every admitted Zitadel login to
+receive **Main Org Admin**, with mapping deferred. **Separate documentation/values
+commits and a push are approved; no Terraform action is needed.** Exact live ArgoCD sync/health/
+revision, rollout, live settings, fresh Admin login and refresh evidence remain
+pending. This checkpoint is **not complete**, and media burn-in stays open.
 
 #### A. Verified preflight and short history
 
 - User output confirmed Grafana `11.4.1`, one ready replica on OCI; the original
   Auth0 deployment used `grafana-auth0` and separate `grafana-admin-credentials`.
 - HTTP Basic `GET /api/user` verified local admin **user `1`**, login `admin`,
-  `isGrafanaAdmin: true`. **Browser fallback remains unverified**; do not reset
-  its password or assume the Secret resets an existing persisted password.
-- Existing Auth0 **user `2`**, org `1`, has login/email `greg.arendse@gmail.com`.
-  The user clarified that their Zitadel email differs. The strict email-based
-  rule failed with “IdP did not return a role attribute”. The later user `2`
-  alias/linking and project-role plans are superseded, not required steps.
+  `isGrafanaAdmin: true`. **Local-admin browser login is now user-confirmed**;
+  do not reset its password or assume the Secret resets a persisted password.
+- The earlier strict email-based rule failed with “IdP did not return a role
+  attribute”. User `2` alias/linking plans are superseded; lookup stays off.
+- The user removed a conflicting Grafana account and login now works. They
+  inspected the personal SSO profile: **Gregory Arendse**, email/login
+  **`greg.arendse@gmail.com`**, synced by **Generic OAuth**, **Main Org Viewer**,
+  **Grafana Admin No**. Neither the deleted user's numeric ID nor the current
+  SSO numeric ID is known; do not infer user `2` was retained, deleted or replaced.
 - User confirmed OCI context and creation of `monitoring/grafana-zitadel` with
   the dedicated Grafana client credentials. Staging is done: do not recreate it
   or print credentials. Retain `grafana-auth0` and `grafana-admin-credentials`.
-- Retain both existing accounts and their emails; intentionally delete/modify
-  neither. A Grafana DB backup was **explicitly declined**; none was taken.
+- The agent deleted no users. Retain local admin `1`, remaining accounts and
+  Secrets; do not delete/change accounts to force association. A Grafana DB
+  backup was **explicitly declined**; none was taken and that decision is settled.
 
-#### B. Minimal design to review
+#### B. Temporary code-controlled Admin policy (live verification pending)
 
-Keep `grafana.envFromSecret: grafana-zitadel` and the standard generic OAuth
-provider endpoints unchanged:
+Keep `grafana.envFromSecret: grafana-zitadel` and the provider endpoints unchanged.
+Under `grafana.grafana.ini.auth.generic_oauth`, use the constant role expression:
 
 ```yaml
 name: Zitadel
 auth_url: https://homelab-jj4izt.eu1.zitadel.cloud/oauth/v2/authorize
 token_url: https://homelab-jj4izt.eu1.zitadel.cloud/oauth/v2/token
 api_url: https://homelab-jj4izt.eu1.zitadel.cloud/oidc/v1/userinfo
+role_attribute_path: "'Admin'"
 ```
 
-- `[auth.generic_oauth]`: scopes `openid profile email offline_access`,
+- `[auth.generic_oauth]`: only standard scopes `openid profile email offline_access`,
   `use_pkce=true`, `use_refresh_token=true`, `allow_sign_up=true`,
-  `skip_org_role_sync=true`, `role_attribute_strict=false`,
-  `allow_assign_grafana_admin=false`; no `role_attribute_path`, claim aliases
-  or `org_mapping`. Use standard claims, including the actual Zitadel email.
+  `skip_org_role_sync=false`, `role_attribute_strict=false`,
+  `allow_assign_grafana_admin=false`; no `org_mapping`. Use standard profile/email
+  claims, without account aliases, hardcoded email or personal `sub`.
+- YAML `"'Admin'"` is the JMESPath literal `'Admin'`, not a claim lookup. Every
+  successful Zitadel login gets Main Org **Admin** on next login after deployment,
+  including no-role users and a user labelled `ZITADEL Admin`. No project role,
+  grant, admin claim, extra scope or custom Action is required; existing role
+  assertion settings are unchanged and do not control this constant policy.
+- Organization **Admin** is not server **GrafanaAdmin**; server-admin grants
+  remain disabled. `skip_org_role_sync=false` overwrites manual Grafana org
+  assignments on login. Removing Zitadel roles does not downgrade users under
+  this policy. Local admin is unaffected; anonymous visitors gain no access.
 - `[users]`: `allow_sign_up=false` disables **local self-signup only**;
   `auto_assign_org=true`, `auto_assign_org_role=Viewer`, default org ID `1`.
-  OAuth signup independently auto-provisions IdP-authenticated users.
+  OAuth signup independently auto-provisions IdP-authenticated users; the constant
+  OAuth expression overrides Viewer for Zitadel users, including no-role users.
 - `[auth]`: `oauth_allow_insecure_email_lookup=false`,
   `disable_login_form=false`, `oauth_auto_login=false`; keep Basic auth enabled
   and generic OAuth `auto_login=false`. No temporary email-lookup window.
-- This normally provisions a **new Grafana account**, not necessarily user `2`.
-  New accounts may not inherit old preferences/permissions. Local admin can
-  adjust them manually later; skipped role sync preserves local assignments.
-  **Stop on email/login uniqueness collisions**: no DB surgery, automatic
-  alias/merge, email changes or enabling lookup to force association.
-- Zitadel's Grafana project has `has_project_check=true`,
-  `project_role_check=false`, no external project grants configured, and
-  self-registration disabled **according to the user**. Intended access is
-  org-wide: eligible `arendse` users may provision as Viewer, not administrator.
-  Outside-org negative tests remain **deferred and unverified**.
-- Role definitions `admin`, `editor`, `viewer` were manually created in the
-  Grafana project and confirmed; the user's assignment is only tentative.
-  Role mapping/assignment verification is deferred, **not a prerequisite**.
+- Do not assume a new or retained SSO account ID. Preferences/permissions are
+  not automatically migrated; role sync no longer preserves manual org roles.
+  **Stop on further email/login uniqueness collisions**: no deletion, DB
+  surgery, automatic alias/merge, email changes or enabling lookup to associate.
+- Login admission relies on Zitadel's existing Grafana project
+  `390167990928259276` in `arendse` (`380143417033860850`):
+  `has_project_check=true`, `project_role_check=false`, no external project grants
+  reported, self-registration disabled **per the user, not independently verified**.
+  **All current and future admitted users receive Main Org Admin. Narrow the
+  policy before onboarding, enabling registration or granting external orgs
+  access.** Outside-org denial remains **deferred, not passed**.
+- **Role mapping and Terraform adoption are deferred again.** No Terraform action
+  or `grafana_greg_user_grant_id` is required now. Cleanup is limited to the
+  agent's untracked, **unapplied** `infrastructure/identity/grafana-roles.tf` draft
+  and its header reference. No live plan, import or apply was ever run for that
+  draft; console roles/grants remain untouched.
+- **Later follow-up:** replace the constant with least-privilege, org-scoped
+  Admin/Editor/Viewer mapping; decide no-role behavior and verify actual claims
+  and role removal/downgrade. Separately review Terraform adoption of existing
+  roles/grants, tighten admission and test outside-org denial before expanding
+  access. None of this is a prerequisite for the temporary constant policy.
 
 #### C. Deploy and verify — pending, user-run on OCI only
 
-1. Publish values commit `66ed660` and the separate migration docs, as explicitly
-   requested by the user. Keep unrelated work out; auto-sync deploys `master`.
-   Only the user runs cluster commands. Confirm `kubectl config current-context`
-   is `oci` before any cluster write. Do not manually Helm-upgrade or restart
-   ahead of GitOps.
+1. The user approved separate documentation/values commits and a push of the
+   constant policy. **No grant ID or Terraform action is needed.** Auto-sync
+   deploys `master`; the agent may perform the approved Git push but only the
+   user runs cluster commands. Confirm `kubectl config current-context` is `oci`
+   before any cluster write. Do not manually Helm-upgrade or restart ahead of
+   GitOps.
 2. After the approved push, record exact sync, health and Git revision;
    require `Synced` / `Healthy` at the intended revision and a successful rollout:
 
@@ -794,33 +840,41 @@ api_url: https://homelab-jj4izt.eu1.zitadel.cloud/oidc/v1/userinfo
          auto_assign_org_id, auto_assign_org_role})}'
    ```
 
-   Require section B's settings: OAuth signup/skip-role-sync `true`, local
-   signup/insecure lookup/strict roles/server-admin assignment `false`, default
-   org `1`/Viewer, empty role/alias/org mappings, local form on and auto-login off.
+   Require section B's standard scopes and constant `role_attribute_path` value
+   `'Admin'` (YAML `"'Admin'"`): OAuth signup `true`; skip-role-sync/local signup/
+   insecure lookup/strict roles/server-admin assignment `false`; default org
+   `1`/Viewer unchanged but overridden by OAuth Admin, no alias/org mappings,
+   local form on and auto-login off.
    If settings differ, stop before testing SSO. Share no passwords, tokens,
    cookies, raw settings/logs or callback URLs.
-4. Verify **local admin `1` browser login** in a separate session; keep this
-   fallback available. Its Basic API check alone is not browser verification.
+4. Keep the **user-confirmed local admin `1` browser login** available in a
+   separate session; recheck fallback after rollout.
 5. In a fresh private browser, choose Zitadel and log in. At `/api/user`, record
    the account ID/login/email; require **not local admin `1`**, `orgId: 1`,
-   `isGrafanaAdmin: false`, and the **actual Zitadel email**. Do not require ID `2`
-   or the old Auth0 email. At `/api/user/orgs`, require org `1` role **Viewer**
-   for the newly provisioned account. Stop on any collision or unexpected access.
-6. Verify intended dashboards load as Viewer. Log out of the test session and
-   perform a fresh Zitadel re-login; verify the same account, email and org/role.
+   `isGrafanaAdmin: false`, and the actual Zitadel email (observed profile:
+   `greg.arendse@gmail.com`). Do not assume the SSO numeric ID. At
+   `/api/user/orgs`, require org `1` (**Main Org**) **Admin**, while **Grafana
+   Admin remains No**, regardless of Zitadel roles. When an eligible no-role
+   user is available, expect Admin too, not Viewer. No role-claim evidence is
+   needed for the constant. Stop on any collision or unexpected access.
+6. Verify intended dashboards load. Log out of the test session and perform a
+   fresh Zitadel re-login; verify the same account, email and expected org/role.
    Exercise session/token refresh and record the result; a surviving old
-   session alone is not proof. No admin logout of Auth0 user `2` is required.
+   session alone is not proof.
 
-**Still pending:** deployment/settings, fresh Viewer login, dashboard access,
-local-admin browser fallback and fresh re-login/refresh. Mark complete only after
-these succeed; record unavailable outside-org tests as deferred, never passed.
-Future role mapping stays deferred and CP-1.2 media burn-in stays open.
+**Still pending after the approved publication:** exact synced revision/health/
+rollout, live settings, fresh Main Org Admin verification
+with Grafana Admin No, dashboards and re-login/refresh; no-role Admin test when an
+account is available. SSO and local-admin HTTP Basic/browser access are
+user-confirmed, not a completed Admin rollout. Role mapping/Terraform adoption
+are deferred, not prerequisites. Outside-org testing is **deferred, never passed**.
+CP-1.2 media burn-in stays open.
 
 **Rollback:** review reverting provider URLs and `envFromSecret` to the retained
-`grafana-auth0`, then user push. Lookup off means no deliberate user `2` rebinding
-in this flow, but prior attempts' binding effects are unknown: retain accounts
-and Secrets and review recovery separately if needed. Reverting the provider
-does **not** migrate a new account's preferences/permissions back to user `2`.
+`grafana-auth0`, then user-controlled push. Retain remaining accounts and Secrets;
+review any binding recovery separately. Provider/config rollback **cannot restore
+the deleted user's metadata** or automatically migrate preferences/permissions.
+The deleted/current SSO IDs remain unknown; do not assume user `2`'s state.
 
 ---
 
