@@ -39,6 +39,72 @@ See `hermes-secrets.example.yaml` for the full list of supported keys
 
 ---
 
+## Home Assistant MCP
+
+Hermes connects to Home Assistant's [MCP server](https://www.home-assistant.io/integrations/mcp_server/)
+over the cluster network. This is separate from the native `platforms.homeassistant`
+gateway (state-change events and `ha_*` tools). Both use `HASS_URL` and `HASS_TOKEN`.
+
+OAuth is not used. Hermes runs headless, and Home Assistant's IndieAuth check
+rejects Hermes' loopback callback. A long-lived access token is the supported
+path for that.
+
+### 1. Enable the integration in Home Assistant
+
+Home Assistant is on **oci** (`https://home-assistant.arendse.nom.za`). The
+`/api/mcp` endpoint 404s until the integration exists — it is a UI config entry,
+not something this repo can declare.
+
+1. **Settings → Devices & services → Add Integration → Model Context Protocol Server**
+2. Allow clients to control Home Assistant
+3. **Settings → Voice assistants → Expose** — expose only the entities Hermes should see or control
+
+`/api/mcp` serves whichever LLM API you picked in that setup (Assist, unless you
+changed it). Pin Assist explicitly by changing the URL in the config YAML to
+`${HASS_URL}/api/mcp/assist`.
+
+### 2. Add the token
+
+Create a long-lived access token as an admin user (**Profile → Security →
+Long-lived access tokens**) and put it in the untracked secret:
+
+```yaml
+HASS_TOKEN: "<token>"
+```
+
+`config.yaml` sends it as `Authorization: Bearer ${HASS_TOKEN}`. The URL is
+`http://home-assistant.home-assistant:8123/api/mcp` via `HASS_URL`.
+
+Apply against **oci**. Confirm the context first — the default kubeconfig also
+has work GKE contexts.
+
+```bash
+kubectl config current-context
+kubectl apply -f hermes-secrets.yaml
+```
+
+### 3. Restart Hermes after GitOps sync
+
+`config.yaml` is a subPath ConfigMap mount, and `HASS_TOKEN` is injected at
+process start. Neither hot-reloads. After this change is on `master` and ArgoCD
+has synced `oci-hermes`, restart:
+
+```bash
+kubectl rollout restart -n hermes deployment/hermes
+```
+
+### 4. Verify
+
+```bash
+kubectl exec -n hermes deploy/hermes -- hermes mcp test homeassistant
+```
+
+A 404 means the integration is not added. A 401 means the token is wrong or
+missing. Tools show up as `mcp__homeassistant__*`. Hermes can only control
+entities exposed in step 1.
+
+---
+
 ## Provider configuration
 
 The LLM provider is controlled by which YAML file is inlined into the

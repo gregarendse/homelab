@@ -139,6 +139,8 @@
                       value = "0.0.0.0";
                     }
                     {
+                      # In-cluster Home Assistant. Referenced by config.yaml as
+                      # ${HASS_URL}/api/mcp (MCP) and by the native HA platform.
                       name = "HASS_URL";
                       value = "http://home-assistant.home-assistant:8123";
                     }

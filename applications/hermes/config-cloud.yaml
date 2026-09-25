@@ -33,3 +33,19 @@ api_server:
 platforms:
   homeassistant:
     enabled: true
+
+# Home Assistant MCP server:
+# https://www.home-assistant.io/integrations/mcp_server/
+#
+# HASS_URL is set on the pod (hermes.nix). HASS_TOKEN comes from hermes-secrets.
+# HA serves Streamable HTTP on POST /api/mcp only — a HEAD/GET preflight is not
+# an MCP response, so skip it. The integration must be added in the HA UI or
+# this endpoint 404s. See applications/hermes/README.md.
+mcp_servers:
+  homeassistant:
+    url: "${HASS_URL}/api/mcp"
+    headers:
+      Authorization: "Bearer ${HASS_TOKEN}"
+    skip_preflight: true
+    timeout: 90
+    connect_timeout: 30

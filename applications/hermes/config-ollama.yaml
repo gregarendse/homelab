@@ -17,3 +17,14 @@ api_server:
   enabled: true
   host: "0.0.0.0"
   port: 8642
+
+# Home Assistant MCP server. Same block as config-cloud.yaml — keep them in sync.
+# HASS_URL is set on the pod; HASS_TOKEN comes from hermes-secrets.
+mcp_servers:
+  homeassistant:
+    url: "${HASS_URL}/api/mcp"
+    headers:
+      Authorization: "Bearer ${HASS_TOKEN}"
+    skip_preflight: true
+    timeout: 90
+    connect_timeout: 30

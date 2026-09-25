@@ -10,7 +10,7 @@
           "kubenix/project-name": "kubenix"
         },
         "labels": {
-          "kubenix/hash": "dd3683823078582e7bb99446b5cfbb6ee3ef5951"
+          "kubenix/hash": "79da803da8c02dfb4d935236bdacc64d1670372f"
         },
         "name": "hermes"
       }
@@ -25,7 +25,7 @@
         },
         "labels": {
           "app": "hermes",
-          "kubenix/hash": "dd3683823078582e7bb99446b5cfbb6ee3ef5951"
+          "kubenix/hash": "79da803da8c02dfb4d935236bdacc64d1670372f"
         },
         "name": "hermes",
         "namespace": "hermes"
@@ -189,7 +189,7 @@
     {
       "apiVersion": "v1",
       "data": {
-        "config.yaml": "# Hermes Agent — provider configuration: Cloud provider\n#\n# Referenced from hermes.nix via:\n#   data.\"config.yaml\" = builtins.readFile ./config-cloud.yaml;\n#\n# Uncomment the provider block you want and set the matching API key in\n# hermes-secrets.yaml (see hermes-secrets.example.yaml).\n\nmodel:\n  # ── OpenAI ──────────────────────────────────────────────────────────────────\n  # Requires OPENAI_API_KEY in hermes-secrets.\n  #  provider: openai\n  #  model: gpt-4o\n\n  # ── Gemini / Google AI ──────────────────────────────────────────────────────\n  # Uncomment and comment-out the OpenAI block above.\n  # Requires GEMINI_API_KEY in hermes-secrets.\n  provider: google\n  model: gemini-flash-latest\nfallback_providers:\n  - provider: google\n    model: gemini-flash-lite-latest\n  - provider: openai\n    model: gpt-5.4-mini\n\ngateway:\n  enabled: true\napi_server:\n  enabled: true\n  host: \"0.0.0.0\"\n  port: 8642\n\nplatforms:\n  homeassistant:\n    enabled: true"
+        "config.yaml": "# Hermes Agent — provider configuration: Cloud provider\n#\n# Referenced from hermes.nix via:\n#   data.\"config.yaml\" = builtins.readFile ./config-cloud.yaml;\n#\n# Uncomment the provider block you want and set the matching API key in\n# hermes-secrets.yaml (see hermes-secrets.example.yaml).\n\nmodel:\n  # ── OpenAI ──────────────────────────────────────────────────────────────────\n  # Requires OPENAI_API_KEY in hermes-secrets.\n  #  provider: openai\n  #  model: gpt-4o\n\n  # ── Gemini / Google AI ──────────────────────────────────────────────────────\n  # Uncomment and comment-out the OpenAI block above.\n  # Requires GEMINI_API_KEY in hermes-secrets.\n  provider: google\n  model: gemini-flash-latest\nfallback_providers:\n  - provider: google\n    model: gemini-flash-lite-latest\n  - provider: openai\n    model: gpt-5.4-mini\n\ngateway:\n  enabled: true\napi_server:\n  enabled: true\n  host: \"0.0.0.0\"\n  port: 8642\n\nplatforms:\n  homeassistant:\n    enabled: true\n\n# Home Assistant MCP server:\n# https://www.home-assistant.io/integrations/mcp_server/\n#\n# HASS_URL is set on the pod (hermes.nix). HASS_TOKEN comes from hermes-secrets.\n# HA serves Streamable HTTP on POST /api/mcp only — a HEAD/GET preflight is not\n# an MCP response, so skip it. The integration must be added in the HA UI or\n# this endpoint 404s. See applications/hermes/README.md.\nmcp_servers:\n  homeassistant:\n    url: \"${HASS_URL}/api/mcp\"\n    headers:\n      Authorization: \"Bearer ${HASS_TOKEN}\"\n    skip_preflight: true\n    timeout: 90\n    connect_timeout: 30\n"
       },
       "kind": "ConfigMap",
       "metadata": {
@@ -199,7 +199,7 @@
         },
         "labels": {
           "app": "hermes",
-          "kubenix/hash": "dd3683823078582e7bb99446b5cfbb6ee3ef5951"
+          "kubenix/hash": "79da803da8c02dfb4d935236bdacc64d1670372f"
         },
         "name": "hermes-config",
         "namespace": "hermes"
@@ -215,7 +215,7 @@
         },
         "labels": {
           "app": "hermes",
-          "kubenix/hash": "dd3683823078582e7bb99446b5cfbb6ee3ef5951",
+          "kubenix/hash": "79da803da8c02dfb4d935236bdacc64d1670372f",
           "recurring-job-group.longhorn.io/friday-backup": "enabled",
           "recurring-job.longhorn.io/source": "enabled"
         },
@@ -244,7 +244,7 @@
         },
         "labels": {
           "app": "hermes",
-          "kubenix/hash": "dd3683823078582e7bb99446b5cfbb6ee3ef5951"
+          "kubenix/hash": "79da803da8c02dfb4d935236bdacc64d1670372f"
         },
         "name": "hermes",
         "namespace": "hermes"
@@ -273,7 +273,7 @@
   ],
   "kind": "List",
   "labels": {
-    "kubenix/hash": "dd3683823078582e7bb99446b5cfbb6ee3ef5951",
+    "kubenix/hash": "79da803da8c02dfb4d935236bdacc64d1670372f",
     "kubenix/k8s-version": "1.28",
     "kubenix/project-name": "kubenix"
   }
