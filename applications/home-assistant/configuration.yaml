@@ -21,3 +21,22 @@ http:
     - 172.16.0.0/12
     - 192.168.0.0/16
 
+template:
+  - sensor:
+      - name: "Electricity Grid Consumption"
+        unique_id: electricity_grid_consumption
+        state: "{{ states('sensor.electricity_meter_today') }}"
+        availability: >
+          {{ is_number(states('sensor.electricity_meter_today')) }}
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+
+      - name: "Gas Consumption"
+        unique_id: gas_consumption
+        state: "{{ states('sensor.gas_meter_today') }}"
+        availability: >
+          {{ is_number(states('sensor.gas_meter_today')) }}
+        unit_of_measurement: "kWh"
+        device_class: gas
+        state_class: total_increasing
