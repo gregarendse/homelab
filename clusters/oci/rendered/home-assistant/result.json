@@ -10,7 +10,7 @@
           "kubenix/project-name": "kubenix"
         },
         "labels": {
-          "kubenix/hash": "451906754f52badb7d1135b7733bc2822308a764"
+          "kubenix/hash": "853147b299bb6c1472ee3b3d74b55a607ddc7267"
         },
         "name": "home-assistant"
       }
@@ -25,7 +25,7 @@
         },
         "labels": {
           "app": "home-assistant",
-          "kubenix/hash": "451906754f52badb7d1135b7733bc2822308a764"
+          "kubenix/hash": "853147b299bb6c1472ee3b3d74b55a607ddc7267"
         },
         "name": "home-assistant",
         "namespace": "home-assistant"
@@ -130,7 +130,7 @@
     {
       "apiVersion": "v1",
       "data": {
-        "configuration.yaml": "# Loads default set of integrations. Do not remove.\ndefault_config:\n\n# Load frontend themes from the themes folder\nfrontend:\n  themes: !include_dir_merge_named themes\n\n# Text to speech\ntts:\n  - platform: google_translate\n\nautomation: !include automations.yaml\nscript: !include scripts.yaml\nscene: !include scenes.yaml\n\n# HTTP Configuration for reverse proxy\nhttp:\n  use_x_forwarded_for: true\n  trusted_proxies:\n    - 10.0.0.0/8\n    - 172.16.0.0/12\n    - 192.168.0.0/16\n\n"
+        "configuration.yaml": "# Loads default set of integrations. Do not remove.\ndefault_config:\n\n# Load frontend themes from the themes folder\nfrontend:\n  themes: !include_dir_merge_named themes\n\n# Text to speech\ntts:\n  - platform: google_translate\n\nautomation: !include automations.yaml\nscript: !include scripts.yaml\nscene: !include scenes.yaml\n\n# HTTP Configuration for reverse proxy\nhttp:\n  use_x_forwarded_for: true\n  trusted_proxies:\n    - 10.0.0.0/8\n    - 172.16.0.0/12\n    - 192.168.0.0/16\n\ntemplate:\n  - sensor:\n      - name: \"Electricity Grid Consumption\"\n        unique_id: electricity_grid_consumption\n        state: \"{{ states('sensor.electricity_meter_today') }}\"\n        availability: >\n          {{ is_number(states('sensor.electricity_meter_today')) }}\n        unit_of_measurement: \"kWh\"\n        device_class: energy\n        state_class: total_increasing\n\n      - name: \"Gas Consumption\"\n        unique_id: gas_consumption\n        state: \"{{ states('sensor.gas_meter_today') }}\"\n        availability: >\n          {{ is_number(states('sensor.gas_meter_today')) }}\n        unit_of_measurement: \"kWh\"\n        device_class: gas\n        state_class: total_increasing\n"
       },
       "kind": "ConfigMap",
       "metadata": {
@@ -139,7 +139,7 @@
           "kubenix/project-name": "kubenix"
         },
         "labels": {
-          "kubenix/hash": "451906754f52badb7d1135b7733bc2822308a764"
+          "kubenix/hash": "853147b299bb6c1472ee3b3d74b55a607ddc7267"
         },
         "name": "home-assistant-config",
         "namespace": "home-assistant"
@@ -154,7 +154,7 @@
           "kubenix/project-name": "kubenix"
         },
         "labels": {
-          "kubenix/hash": "451906754f52badb7d1135b7733bc2822308a764",
+          "kubenix/hash": "853147b299bb6c1472ee3b3d74b55a607ddc7267",
           "recurring-job-group.longhorn.io/monday-backup": "enabled",
           "recurring-job.longhorn.io/source": "enabled"
         },
@@ -183,7 +183,7 @@
         },
         "labels": {
           "app": "home-assistant",
-          "kubenix/hash": "451906754f52badb7d1135b7733bc2822308a764"
+          "kubenix/hash": "853147b299bb6c1472ee3b3d74b55a607ddc7267"
         },
         "name": "home-assistant",
         "namespace": "home-assistant"
@@ -214,7 +214,7 @@
           "kubenix/project-name": "kubenix"
         },
         "labels": {
-          "kubenix/hash": "451906754f52badb7d1135b7733bc2822308a764"
+          "kubenix/hash": "853147b299bb6c1472ee3b3d74b55a607ddc7267"
         },
         "name": "home-assistant-ingress",
         "namespace": "home-assistant"
@@ -246,7 +246,7 @@
   ],
   "kind": "List",
   "labels": {
-    "kubenix/hash": "451906754f52badb7d1135b7733bc2822308a764",
+    "kubenix/hash": "853147b299bb6c1472ee3b3d74b55a607ddc7267",
     "kubenix/k8s-version": "1.28",
     "kubenix/project-name": "kubenix"
   }
