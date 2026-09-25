@@ -21,15 +21,6 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - name: Set up Go
-        uses: actions/setup-go@v7
-        with:
-          go-version-file: src/go/ci/go.mod
-          cache: true
-
-      - name: Build CI tool
-        run: cd src/go/ci && go build -o "$GITHUB_WORKSPACE/ci-tool" .
-
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v22
 
@@ -41,7 +32,9 @@ jobs:
         run: |
           set -euo pipefail
 
-          ./ci-tool argocd list-rendered \
+          CONTAINER_IMAGE="ghcr.io/$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')/ci:latest"
+
+          docker run --rm -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" -w "$GITHUB_WORKSPACE" "$CONTAINER_IMAGE" argocd list-rendered \
           | while IFS=$'\t' read -r cluster app_name app_path; do
             echo "Rendering $cluster/$app_name from $app_path"
             test -d "$app_path"
@@ -55,8 +48,11 @@ jobs:
           done
 
       - name: Generate Argo CD ApplicationSets
+        shell: bash
         run: |
-          ./ci-tool argocd generate \
+          CONTAINER_IMAGE="ghcr.io/$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')/ci:latest"
+
+          docker run --rm -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" -w "$GITHUB_WORKSPACE" "$CONTAINER_IMAGE" argocd generate \
             --repo-url "https://github.com/${{ github.repository }}.git" \
             --target-revision master
 

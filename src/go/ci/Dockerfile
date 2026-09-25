@@ -1,24 +1,26 @@
 # Build Stage
-FROM golang:1.21-alpine AS build-stage
-
-LABEL app="build-ci"
+FROM golang:alpine AS build-stage
 
 WORKDIR /src
+
+COPY go.mod go.sum ./
+RUN go mod download
+
 COPY . .
-
-RUN go build -ldflags '-w -s' -o /ci .
-
-# Final Stage
-FROM alpine:3
 
 ARG GIT_COMMIT
 ARG VERSION
-LABEL GIT_COMMIT=$GIT_COMMIT
-LABEL VERSION=$VERSION
+ARG BUILD_DATE
 
-COPY --from=build-stage /ci /usr/local/bin/ci
+RUN CGO_ENABLED=0 go build -ldflags "-w -s \
+  -X github.com/gregarendse/ci/version.GitCommit=${GIT_COMMIT} \
+  -X github.com/gregarendse/ci/version.BuildDate=${BUILD_DATE}" \
+  -o /ci .
 
-RUN adduser -D -g '' ci
-USER ci
+# Final Stage
+FROM scratch
 
-ENTRYPOINT ["ci"]
+COPY --from=build-stage /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=build-stage /ci /ci
+
+ENTRYPOINT ["/ci"]
