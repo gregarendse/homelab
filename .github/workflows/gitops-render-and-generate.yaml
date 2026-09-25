@@ -13,19 +13,40 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      packages: read
     if: "!contains(github.event.pull_request.title, '[skip gitops]')"
 
     steps:
       - name: Checkout PR branch
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Ensure CI Docker image
+        shell: bash
+        run: |
+          set -euo pipefail
+          CONTAINER_IMAGE="ghcr.io/$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')/ci:latest"
+          if ! docker pull "$CONTAINER_IMAGE"; then
+            echo "Failed to pull $CONTAINER_IMAGE from GHCR, building locally..."
+            docker build -t "$CONTAINER_IMAGE" src/go/ci
+          fi
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v22
 
       - name: Enable Nix cache
         uses: DeterminateSystems/magic-nix-cache-action@v14
+        with:
+          use-flakehub: false
 
       - name: Render kubenix apps
         shell: bash
