@@ -1,0 +1,45 @@
+name: ci-tool-pr
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - "src/go/ci/**"
+      - ".github/workflows/ci-tool-pr.yaml"
+
+concurrency:
+  group: ci-tool-pr-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: verify ci tool
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: src/go/ci/go.mod
+          cache: true
+
+      - name: Run Go tests
+        run: |
+          cd src/go/ci
+          go test -v ./...
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: src/go/ci
+          load: true
+          tags: ci-tool:test
+
+      - name: Test running Docker image
+        run: |
+          docker run --rm ci-tool:test argocd --help
