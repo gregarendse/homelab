@@ -22,39 +22,27 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
-      - name: Ensure CI Docker image
-        shell: bash
-        run: |
-          set -euo pipefail
-          CONTAINER_IMAGE="ghcr.io/$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')/ci:latest"
-          if ! docker pull "$CONTAINER_IMAGE"; then
-            echo "Image $CONTAINER_IMAGE not found in GHCR, building locally..."
-            docker build -t "$CONTAINER_IMAGE" src/go/ci
-          fi
-
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v22
 
       - name: Enable Nix cache
         uses: DeterminateSystems/magic-nix-cache-action@v14
 
+      - name: List rendered kubenix apps
+        id: list-rendered
+        uses: ./.github/actions/ci-tool
+        with:
+          command: argocd list-rendered
+
       - name: Render kubenix apps
+        env:
+          RENDERED_APPS: ${{ steps.list-rendered.outputs.stdout }}
         shell: bash
         run: |
           set -euo pipefail
 
-          CONTAINER_IMAGE="ghcr.io/$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')/ci:latest"
-
-          docker run --rm -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" -w "$GITHUB_WORKSPACE" "$CONTAINER_IMAGE" argocd list-rendered \
-          | while IFS=$'\t' read -r cluster app_name app_path; do
+          echo "$RENDERED_APPS" | while IFS=$'\t' read -r cluster app_name app_path; do
+            [ -z "$cluster" ] && continue
             echo "Rendering $cluster/$app_name from $app_path"
             test -d "$app_path"
 
@@ -67,13 +55,9 @@ jobs:
           done
 
       - name: Generate Argo CD ApplicationSets
-        shell: bash
-        run: |
-          CONTAINER_IMAGE="ghcr.io/$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')/ci:latest"
-
-          docker run --rm -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" -w "$GITHUB_WORKSPACE" "$CONTAINER_IMAGE" argocd generate \
-            --repo-url "https://github.com/${{ github.repository }}.git" \
-            --target-revision master
+        uses: ./.github/actions/ci-tool
+        with:
+          command: argocd generate --repo-url "https://github.com/${{ github.repository }}.git" --target-revision master
 
       - name: Commit generated changes
         shell: bash

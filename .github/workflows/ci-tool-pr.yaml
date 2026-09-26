@@ -6,6 +6,7 @@ on:
     paths:
       - "src/go/ci/**"
       - ".github/workflows/ci-tool-pr.yaml"
+      - ".github/actions/ci-tool/**"
 
 concurrency:
   group: ci-tool-pr-${{ github.head_ref }}
@@ -43,3 +44,9 @@ jobs:
       - name: Test running Docker image
         run: |
           docker run --rm ci-tool:test argocd --help
+
+      - name: Test GitHub Action
+        uses: ./.github/actions/ci-tool
+        with:
+          image: ci-tool:test
+          command: argocd --help
