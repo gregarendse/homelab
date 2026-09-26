@@ -12,6 +12,10 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   # Terraform modules (each module directory must directly contain .tf files)
   - package-ecosystem: "terraform"
@@ -25,6 +29,10 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   - package-ecosystem: "terraform"
     directory: "/infrastructure/modules/oracle/networking/network-load-balancer/listener"
@@ -37,6 +45,10 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   - package-ecosystem: "terraform"
     directory: "/infrastructure/cloudflare"
@@ -49,6 +61,10 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   - package-ecosystem: "terraform"
     directory: "/infrastructure/compute"
@@ -61,6 +77,10 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   - package-ecosystem: "terraform"
     directory: "/infrastructure/kubernetes"
@@ -73,6 +93,10 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   - package-ecosystem: "terraform"
     directory: "/infrastructure/network"
@@ -85,6 +109,10 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   # Docker images in application values.yaml files
   - package-ecosystem: "docker"
@@ -98,6 +126,10 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/applications/deluge"
@@ -110,6 +142,10 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/applications/echo"
@@ -122,6 +158,10 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/applications/heimdall"
@@ -134,6 +174,10 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/applications/home-assistant"
@@ -146,6 +190,10 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/applications/keel"
@@ -158,6 +206,10 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/applications/nginx"
@@ -170,6 +222,10 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/applications/openhab"
@@ -182,6 +238,10 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/applications/plex"
@@ -194,6 +254,10 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/applications/prowlarr"
@@ -206,6 +270,10 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/applications/radarr"
@@ -218,6 +286,10 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/applications/sabnzbd"
@@ -230,6 +302,10 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/applications/sonarr"
@@ -242,6 +318,10 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/applications/tautulli"
@@ -254,6 +334,10 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/applications/traefik"
@@ -266,6 +350,10 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/applications/wireguard"
@@ -278,6 +366,10 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   # GitHub Actions used in workflows (if/when present)
   - package-ecosystem: "github-actions"
@@ -291,3 +383,7 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
