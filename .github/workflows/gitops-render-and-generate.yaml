@@ -44,7 +44,7 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@v23
 
       - name: Enable Nix cache
-        uses: DeterminateSystems/magic-nix-cache-action@v14
+        uses: DeterminateSystems/magic-nix-cache-action@v15
 
       - name: Render kubenix apps
         shell: bash

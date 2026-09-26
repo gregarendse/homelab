@@ -84,7 +84,7 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@v23
 
       - name: Enable Nix cache
-        uses: DeterminateSystems/magic-nix-cache-action@v14
+        uses: DeterminateSystems/magic-nix-cache-action@v15
 
       # result.json files are gitignored, so build each kubenix app fresh
       # before validating its rendered manifests.
