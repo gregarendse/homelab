@@ -1,0 +1,54 @@
+name: 'CI Tool'
+description: 'Executes the homelab CI helper tool Docker image'
+
+inputs:
+  command:
+    description: 'Command and arguments to pass to the CI tool'
+    required: false
+    default: ''
+  image:
+    description: 'Docker image tag (defaults to ghcr.io/<owner>/ci:latest)'
+    required: false
+    default: ''
+
+outputs:
+  stdout:
+    description: 'Captured standard output from the CI tool command execution'
+    value: ${{ steps.run-ci.outputs.stdout }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run CI Tool Container
+      id: run-ci
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        IMAGE="${{ inputs.image }}"
+        if [ -z "$IMAGE" ]; then
+          OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE="ghcr.io/${OWNER_LOWER}/ci:latest"
+        fi
+
+        if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+          if [ -n "${GITHUB_TOKEN:-}" ]; then
+            echo "${GITHUB_TOKEN}" | docker login ghcr.io -u "${GITHUB_ACTOR:-github-actions}" --password-stdin >/dev/null 2>&1 || true
+          fi
+          echo "Pulling Docker image $IMAGE..."
+          if ! docker pull "$IMAGE" >/dev/null 2>&1; then
+            echo "Image $IMAGE not found in GHCR, building locally..."
+            docker build -t "$IMAGE" "${{ github.workspace }}/src/go/ci"
+          fi
+        fi
+
+        TMP_OUT=$(mktemp)
+        # Execute container in working directory mounting GITHUB_WORKSPACE
+        docker run --rm -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" -w "$GITHUB_WORKSPACE" "$IMAGE" ${{ inputs.command }} | tee "$TMP_OUT"
+
+        {
+          echo 'stdout<<EOF'
+          cat "$TMP_OUT"
+          echo 'EOF'
+        } >> "$GITHUB_OUTPUT"
+        rm -f "$TMP_OUT"
