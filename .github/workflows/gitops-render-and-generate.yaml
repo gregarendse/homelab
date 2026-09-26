@@ -41,7 +41,7 @@ jobs:
           fi
 
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v22
+        uses: DeterminateSystems/nix-installer-action@v23
 
       - name: Enable Nix cache
         uses: DeterminateSystems/magic-nix-cache-action@v14
