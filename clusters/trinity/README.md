@@ -75,45 +75,39 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 Change the password after first login (User Info → Update Password), then the
 initial secret can be deleted.
 
-## SSO via Auth0 (native OIDC)
+## SSO via Zitadel (native OIDC)
 
-Argo CD authenticates users against Auth0 directly using its **native OIDC**
-support (configured in `configs.cm.oidc.config` in `argocd.yaml`). It is **not**
-put behind oauth2-proxy — forward-auth would break the Argo CLI/API/gRPC, and
-native OIDC also gives RBAC role mapping. The built-in `admin` account stays as a
-break-glass fallback.
+Argo CD uses Zitadel through its **native OIDC** support in `argocd.yaml`.
+The user confirmed browser login, concrete Application permissions, application
+access, re-login and rollout success. See [CP-3.1](../../applications/zitadel/MIGRATION.md#cp-31--cut-over-trinity-argocd)
+for the evidence, remaining test gaps and rollback instructions.
+Argo CD itself is not GitOps-managed: publishing these values does not apply them.
+The built-in `admin` account stays as a break-glass fallback.
 
-> `<BASE_DOMAIN>` = your public base domain, `<AUTH0_DOMAIN>` = the Auth0 tenant
-> domain. Real values live in `argocd.yaml`.
+### Zitadel application
 
-### Auth0 application
+Terraform in `infrastructure/identity` manages the dedicated `argocd_trinity`
+OIDC client in the `argocd` project:
 
-Create a **Regular Web Application** in the Auth0 tenant (`<AUTH0_DOMAIN>`):
+- **Issuer:** `https://homelab-jj4izt.eu1.zitadel.cloud`
+- **Callback:** `https://trinity.argocd.arendse.nom.za/auth/callback`
+- **Post-logout redirect:** `https://trinity.argocd.arendse.nom.za`
 
-- **Allowed Callback URLs:**
-  `https://trinity.argocd.<BASE_DOMAIN>/auth/callback`, `http://localhost:8085/auth/callback`
-  (the second one is for `argocd login --sso` from the CLI)
-- **Allowed Logout URLs:** `https://trinity.argocd.<BASE_DOMAIN>`
+Argo CD is not put behind oauth2-proxy. Browser SSO is the current migration
+scope; CLI SSO remains unverified.
 
 ### Secret
 
-The client credentials are pulled from an externally-managed Secret (kept out of
-Git). It **must** carry the `app.kubernetes.io/part-of: argocd` label for the
-`$argocd-auth0:clientID` / `$argocd-auth0:clientSecret` references in
-`argocd.yaml` to resolve:
+The user has created `argocd/argocd-zitadel` using the `argocd_trinity` entry in
+Terraform's `zitadel_sso_client_ids` / `zitadel_sso_client_secrets` outputs.
+It is externally managed, never committed, and must contain `clientID` and
+`clientSecret` with the label `app.kubernetes.io/part-of: argocd` so the
+`$argocd-zitadel:clientID` / `$argocd-zitadel:clientSecret` references resolve.
+Do not repeat Secret creation or print the credentials.
 
-```bash
-kubectl -n argocd create secret generic argocd-auth0 \
-  --from-literal=clientID='<auth0-client-id>' \
-  --from-literal=clientSecret='<auth0-client-secret>'
-kubectl -n argocd label secret argocd-auth0 app.kubernetes.io/part-of=argocd
-```
-
-After creating/rotating the Secret, restart the server and repo-server:
-
-```bash
-kubectl -n argocd rollout restart deploy/argocd-server
-```
+Keep `argocd-auth0` intact for rollback. OIDC name, issuer and both Secret
+references were switched together through the user-run **trinity** Helm upgrade
+in CP-3.1. Do not repeat the upgrade or restart for this completed checkpoint.
 
 ### RBAC
 

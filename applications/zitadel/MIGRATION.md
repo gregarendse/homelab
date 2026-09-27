@@ -42,24 +42,24 @@ tick it off, and come back later — nothing here has to be done in one sitting.
 
 Update this as you go so "future you" knows where to resume.
 
-- **Last verified deployment:** CP-4.1 — ArgoCD browser SSO on **oci**, applied
-  through Terraform (**0 added, 1 changed, 0 destroyed**). Zitadel issuer/email
-  and read-only application-sync permission are user-confirmed. The user then
-  replied "All looks good" to the rollout-health, Applications-page and re-login
-  checks. Browser cutover is complete on that confirmation; no raw rollout output
-  was supplied. Chart `9.4.15` / ArgoCD `v3.3.4` were unchanged by the plan.
-- **Latest decision:** accept working Grafana login with the manual Admin
-  workaround; ArgoCD on **trinity** is now paused at the user's request due to
-  connectivity issues, before the local-admin preflight. OCI ArgoCD browser SSO
-  (CP-4.1) is now complete on user confirmation. Grafana's configuration mismatch
+- **Last verified deployment:** CP-3.1 — ArgoCD browser SSO on **trinity**.
+  Zitadel login, API-session issuer/email and concrete Application permission
+  checks are user-confirmed. The user then replied "all looks good" to the
+  application-details, logout/re-login and rollout-success checks. Browser
+  cutover is complete on that confirmation; raw Helm/rollout output was not
+  supplied. The upgrade command retained chart `9.4.15` / ArgoCD `v3.3.4`.
+- **Latest decision:** trinity ArgoCD browser SSO (CP-3.1) is complete with the
+  existing explicit email-admin policy; no new Zitadel roles or broader RBAC
+  were needed. OCI ArgoCD browser SSO (CP-4.1) is also complete. Accept working
+  Grafana login with the manual Admin workaround. Grafana's configuration mismatch
   and remaining verification stay deferred; do not mark them passed.
   The constant Admin policy remains in code; role mapping and Terraform adoption
   are also deferred. Separate `media`, `pihole`, `argocd` and
   `grafana` projects still admit eligible `arendse` users without individual
   assignments. Self-registration is disabled **according to the user; not
   independently verified**. This remains approved untracked work.
-- **Last completed:** CP-4.1 — OCI ArgoCD browser SSO. CP-1.1 (production media
-  proxy) is also complete; trinity ArgoCD remains paused.
+- **Last completed:** CP-3.1 — trinity ArgoCD browser SSO. CP-4.1 (OCI ArgoCD)
+  and CP-1.1 (production media proxy) are also complete.
   Outside-org denial remains **explicitly deferred, not passed** for this
   single-user setup; revisit it before adding users or changing access policies.
 - **In progress:** CP-1.2 — a few days of normal media-app use on **trinity**.
@@ -68,10 +68,18 @@ Update this as you go so "future you" knows where to resume.
   Grafana on **oci** is usable per the user, with manual Admin assignment;
   CP-2.1 proceeds with an accepted workaround, not a fully verified role-sync
   cutover. Media burn-in remains open.
-- **Resume when connectivity returns (trinity / CP-3.1):** verify the built-in ArgoCD `admin` fallback
-  at `https://trinity.argocd.arendse.nom.za` before changing SSO. Then inspect
-  the live OIDC/RBAC configuration and installed chart version, keeping secrets
-  private. Do not change Grafana, clean up Terraform or apply ArgoCD yet.
+- **Completed (trinity / CP-3.1):** local-admin fallback, separate
+  `argocd-zitadel` Secret, Zitadel login and matching API-session identity are
+  user-confirmed. Live RBAC retains the email-admin mapping, empty default,
+  `glob` matching and `[email]` scope, with no additional policy CSV entries.
+  The initial wildcard CanI request returned `no`; concrete checks for
+  `default/trinity-oauth2-proxy` were then reported as `yes`, without RBAC changes.
+  The wildcard discrepancy remains unexplained, not a diagnosed role-sync bug.
+  Application details, re-login and rollout success are user-confirmed.
+  Keep local admin and both Secrets; do not repeat the upgrade or restart.
+- **Next:** review outstanding burn-in and deferred follow-ups. The user approved
+  a local checkpoint commit; pushing requires separate approval. Do not retire
+  Auth0 rollback resources yet.
 - **Completed (oci / CP-4.1):** local-admin login, deployment/OIDC/RBAC
   preflight, context `oci` and creation of `argocd-zitadel` are user-confirmed.
   `argocd-auth0` is retained. Local values now pair the Zitadel issuer/name with
@@ -97,16 +105,15 @@ Update this as you go so "future you" knows where to resume.
   Keep that working setup and DNS unchanged; the Secret-creation command and
   proxy/ingress rollout are withdrawn. OCI's in-scope login cutovers are finished
   with Grafana's accepted manual-Admin workaround, not a fully verified role sync.
-  The user approved cleanup of the abandoned proxy enrollment: its entry in
-  `clusters/oci/apps.yaml` and generated Application are removed locally, while
-  the real Pi-hole enrollment/manifests are retained. Live safety checks are
-  user-supplied: `oci-root` has `automated.enabled: false`; it tracks the proxy
-  Application, which has no finalizers/owner references and reports no managed
-  resources. Publication alone will not remove it automatically. The user
-  approved committing and pushing only the four cleanup files. After publication,
-  the user removes only that Application on **oci**, confirming the revision and
-  context first. Live deletion is NOT yet verified. Unpublished proxy/ingress
-  work must stay out of the cleanup commit.
+  **Enrollment cleanup complete:** commit `7a84e65` was pushed with approval,
+  removing only the proxy enrollment/generated Application and updating two docs.
+  The user then confirmed context **oci**, deleted only
+  `oci-pihole-zitadel-oauth2-proxy`, and supplied successful deletion output.
+  Post-cleanup: `oci-pihole` is **Synced/Healthy**, deployment `pihole` is **1/1**,
+  and the user reports Pi-hole is working. No root sync/prune was needed.
+  These are user-supplied checks, not agent cluster access. Unpublished
+  proxy/ingress work and unused Terraform identity objects remain separate
+  cleanup candidates; do not accidentally publish them.
 - **Deferred Grafana follow-up:** diagnose the discrepancy between
   `applications/monitoring/values.yaml`, ArgoCD's rendered configuration and
   effective Grafana settings, including environment overrides and role sync.
@@ -141,10 +148,10 @@ Update this as you go so "future you" knows where to resume.
 | 0.7 | PoC login and smoke checks passed; outside-org test deferral accepted | ☑ |
 | 1.1 | Production Zitadel login, ArgoCD health and rollout verified | ☑ |
 | 1.2 | In progress: normal `*arr` use for a few days; retain Auth0 rollback | ☐ |
-| 2.1 | Grafana on OCI: login works; manual Admin workaround accepted; automatic role sync/config mismatch and remaining verification deferred; proceed to CP-3.1 | ☐ |
-| 3.1 | Paused: trinity connectivity issues; resume at local-admin preflight before any SSO changes | ☐ |
+| 2.1 | Grafana on OCI: login works; manual Admin workaround accepted; automatic role sync/config mismatch and remaining verification deferred | ☐ |
+| 3.1 | Complete: trinity Zitadel browser login/identity, concrete Application permissions, application details/re-login/rollout user-confirmed; RBAC unchanged | ☑ |
 | 4.1 | Complete: OCI Terraform apply, Zitadel browser login/issuer/email, CanI sync permission, rollout/application access/re-login user-confirmed; test gaps recorded below | ☑ |
-| 5.1 | Skipped: retain native login; proxy enrollment removed locally, publication/live removal pending | — |
+| 5.1 | SSO skipped; enrollment cleanup published in `7a84e65`, live Application deleted, Pi-hole health/access user-confirmed | — |
 | 6.1 | Tear down the PoC rig | ☐ |
 | 6.2 | Remove Auth0 runtime Secrets | ☐ |
 | 6.3 | Retire the Auth0 Terraform + provider | ☐ |
@@ -963,42 +970,118 @@ The deleted/current SSO IDs remain unknown; do not assume user `2`'s state.
 
 ### CP-3.1 — Cut over trinity ArgoCD
 
-**Target cluster: trinity.** Confirm the context before any write. Use the new
-`argocd` project's **trinity** client from CP-0.6, not the OCI or `homelab` client.
+**Complete for browser SSO, based on user confirmation.** Zitadel login,
+API-session identity and concrete Application permission checks succeeded per
+user-supplied results. The user then confirmed application details, logout/
+re-login and rollout success with "all looks good". Raw Helm/rollout output was
+not supplied. Do not repeat the cutover or restart. Keep local `admin`,
+`argocd-auth0` and `argocd-zitadel` for recovery.
 
-> **Next step — preflight only:** test the built-in `admin` login at
-> `https://trinity.argocd.arendse.nom.za`, not the Auth0 button. Keep that session
-> available. No Secret, issuer, RBAC or release changes yet. Before using the
-> rollout recipe below, inspect live configuration and the installed chart
-> version; review staging a separate Zitadel Secret to preserve Auth0 rollback.
+**Target cluster: trinity.** Manually Helm-managed, not OCI Terraform or GitOps.
+Uses the new `argocd` project's **trinity** client from CP-0.6, not the OCI or
+`homelab` client. Only the user runs cluster commands; reconfirm context before
+any future writes.
 
-1. Back up the existing Secret securely, then replace creds in `argocd-auth0`
-   (keep the label!):
-   ```bash
-   CID=$(terraform -chdir=infrastructure/identity output -json zitadel_sso_client_ids | jq -er .argocd_trinity)
-   SEC=$(terraform -chdir=infrastructure/identity output -json zitadel_sso_client_secrets | jq -er .argocd_trinity)
-   kubectl -n argocd delete secret argocd-auth0
-   kubectl -n argocd create secret generic argocd-auth0 \
-     --from-literal=clientID="$CID" --from-literal=clientSecret="$SEC"
-   kubectl -n argocd label secret argocd-auth0 app.kubernetes.io/part-of=argocd
-   ```
-2. In `clusters/trinity/argocd.yaml`, under `configs.cm.oidc.config`, change:
-   ```yaml
-   name: Zitadel
-   issuer: https://homelab-jj4izt.eu1.zitadel.cloud
-   ```
-   ArgoCD uses OIDC discovery. Check the requested claims and RBAC mapping
-   against actual identities/claims; no project roles are created initially.
-   Map intended administrators explicitly and keep default permissions minimal;
-   successful org-wide login must not imply admin.
-3. Deploy the argocd release, then `kubectl -n argocd rollout restart deploy/argocd-server`.
-- **Verify:** at `https://trinity.argocd.arendse.nom.za`, an `arendse` user can
-  log in without project roles and unauthenticated access is challenged. The
-  intended admin gets `role:admin`; non-admins cannot perform admin operations.
-  Test outside-org denial when available and record unavailable outside-org or
-  non-admin tests honestly. Use fresh sessions. If SSO misbehaves, use the local
-  `admin` fallback.
-- **Rollback:** revert `issuer`/`name` and restore the Auth0 client id/secret.
+**Preflight completed — user-supplied evidence:**
+
+- `argocd-server`: one ready replica, chart `argo-cd-9.4.15`, ArgoCD `v3.3.4`.
+- Public URL: `https://trinity.argocd.arendse.nom.za`.
+- Before cutover, live OIDC was Auth0 (`https://arendse.uk.auth0.com/`).
+- `admin.enabled: "true"`; built-in `admin` login works per the user.
+- RBAC: scopes `[email]`, empty default policy, and
+  `g, greg.arendse@gmail.com, role:admin`.
+- Existing `argocd-auth0` Secret retained untouched. The user subsequently
+  reported `secret/argocd-zitadel created` using the `zitadel_sso_*` outputs'
+  `argocd_trinity` entry, keys `clientID` / `clientSecret` and label
+  `app.kubernetes.io/part-of: argocd`. No credential values were shared.
+
+**Secret staging is complete; do not repeat it.** The old instructions to delete
+or overwrite `argocd-auth0` are withdrawn. Creating `argocd-zitadel` alone does
+not switch SSO. No standalone context output was supplied in this resumed
+preflight; reconfirm it before any future write.
+
+**Applied cutover — user-confirmed:** `clusters/trinity/argocd.yaml` switches
+these four OIDC fields together:
+
+```yaml
+name: Zitadel
+issuer: https://homelab-jj4izt.eu1.zitadel.cloud
+clientID: $argocd-zitadel:clientID
+clientSecret: $argocd-zitadel:clientSecret
+```
+
+Requested scopes/email claim, email-admin RBAC, ingress and chart version stay
+unchanged. Org-wide login is not an admin grant. No project-role mapping is
+required for the existing explicit email policy. Committing or pushing this
+values file alone does **not** deploy ArgoCD itself.
+
+**Completed user-run upgrade recipe — reference only; do not repeat.** From the
+repository root:
+
+```bash
+kubectl config current-context
+# Continue only when this reports trinity.
+helm upgrade argocd argo-cd \
+  --repo https://argoproj.github.io/argo-helm \
+  --version 9.4.15 \
+  --kube-context trinity \
+  --namespace argocd \
+  --reuse-values \
+  --values clusters/trinity/argocd.yaml \
+  --rollback-on-failure \
+  --timeout 5m
+```
+
+The locally checked Helm CLI is `v4.3.0`; `--rollback-on-failure` waits for
+readiness and rolls back a failed upgrade (Helm 3 uses `--atomic` instead).
+`--reuse-values` preserves release overrides absent from this file; values
+present in the file take precedence. This is a same-chart-version SSO change,
+not a chart upgrade or a new installation. Stop on errors rather than forcing
+resource replacement. Helm readiness does not verify browser SSO.
+
+**Rollout check — user-confirmed, trinity; reference only:**
+
+```bash
+kubectl --context=trinity -n argocd rollout status deployment/argocd-server --timeout=120s
+```
+
+**Browser and authorization evidence — user-supplied:**
+
+- Zitadel login works. User Info and `/api/v1/session/userinfo` show
+  `greg.arendse@gmail.com` as username and group, issuer
+  `https://homelab-jj4izt.eu1.zitadel.cloud`, and `loggedIn: true`.
+- Live `argocd-rbac-cm` has `g, greg.arendse@gmail.com, role:admin`, empty
+  `policy.default`, `policy.matchMode: glob`, scopes `[email]`, and no additional
+  `policy.*.csv` entries. No role or RBAC changes were made during diagnosis.
+- The initial `/api/v1/account/can-i/applications/sync/*/*` check returned
+  `{"value":"no"}`. Its cause was not established; do not infer an email mismatch
+  or a Grafana-style role-sync problem from that result.
+- The checks were repeated against the concrete Application
+  `default/trinity-oauth2-proxy` using the two read-only URLs below. The user
+  replied "Its returning yse" (yes); separate JSON responses were not supplied.
+  These checks do not perform a sync:
+  - `https://trinity.argocd.arendse.nom.za/api/v1/account/can-i/applications/get/default/trinity-oauth2-proxy`
+  - `https://trinity.argocd.arendse.nom.za/api/v1/account/can-i/applications/sync/default/trinity-oauth2-proxy`
+- The user subsequently replied "all looks good" to application-details access,
+  logout/fresh Zitadel login and successful rollout checks. Browser SSO is
+  complete on that confirmation; do not repeat deployment to fix the unexplained
+  wildcard result.
+
+These permission checks do not prove every admin operation. Outside-org denial
+remains explicitly deferred; non-admin authorization, CLI SSO and a separate
+post-cutover local-admin retest remain unverified, not implied by browser login.
+
+**Rollback:** restore only the four OIDC fields below in
+`clusters/trinity/argocd.yaml` and repeat the same user-run Helm upgrade after
+confirming context `trinity`. Keep both Secrets and RBAC unchanged; do not revert
+unrelated work or delete/recreate credentials.
+
+```yaml
+name: Auth0
+issuer: https://arendse.uk.auth0.com/
+clientID: $argocd-auth0:clientID
+clientSecret: $argocd-auth0:clientSecret
+```
 
 ---
 
@@ -1215,7 +1298,7 @@ has not reported running the now-withdrawn Secret-creation command or either
 rollout stage. No SSO verification is claimed and no live rollback is needed
 based on the supplied preflight.
 
-**Abandoned setup — local enrollment cleanup prepared; live cleanup pending:**
+**Abandoned proxy enrollment — published and live cleanup complete (2026-09-27):**
 
 - The user approved removal of the unused enrollment. Removed only the proxy
   entry from `clusters/oci/apps.yaml` and
@@ -1223,31 +1306,33 @@ based on the supplied preflight.
   remove stale files, so deleting the generated Application is necessary too.
   The separate `oci-pihole` enrollment, its generated Application and Pi-hole
   workload manifests remain unchanged.
-- Last live result: `oci-pihole-zitadel-oauth2-proxy` reports `ComparisonError`
-  because its values are missing from Git. Local removal does not resolve that
-  until published and the live Application is removed. Do not publish the
-  untracked values to fix the error; that would deploy the abandoned proxy.
-- **Live safety check supplied by the user:** `oci-root` has
-  `automated: {enabled: false}`, no finalizers/owner references, and lists the
-  proxy Application among its resources. The proxy's tracking annotation is
+- Before cleanup, `oci-pihole-zitadel-oauth2-proxy` reported `ComparisonError`
+  because its values were missing from Git. The abandoned Application has now
+  been deleted, rather than repaired/deployed. Do not publish the untracked
+  proxy values or re-enroll it.
+- **Pre-deletion safety check supplied by the user:** `oci-root` had
+  `automated: {enabled: false}`, no finalizers/owner references, and listed the
+  proxy Application among its resources. The proxy's tracking annotation was
   `oci-root:argoproj.io/Application:argocd/oci-pihole-zitadel-oauth2-proxy`;
-  its finalizers and owner references are empty and `status.resources` is empty.
-  Its own automated prune/self-heal does not make the parent remove it.
+  its finalizers and owner references were empty and `status.resources` was empty.
+  Its own automated prune/self-heal did not make the parent remove it.
 - The repository has conflicting root definitions: `clusters/oci/root.yaml`
   enables automated prune/self-heal, while Terraform's
   `kubernetes_manifest.argocd_root` in `infrastructure/kubernetes/argocd.tf`
-  has no `syncPolicy`. Neither is changed here. Use the verified live state:
-  **publishing the removal alone will not auto-prune this Application.**
-- The user approved committing/pushing the inventory removal, generated
-  Application deletion and the two updated docs (four files only). After
-  confirming the new Git revision is published, the user confirms **oci** and deletes only
-  `argocd/oci-pihole-zitadel-oauth2-proxy`. Based on the supplied state, there is
-  no ArgoCD resource-deletion finalizer and no reported managed resource to
-  cascade-delete. Recheck if the cleanup is delayed or live state changes.
-  Do not enable root auto-sync or sync/prune the whole root for this cleanup.
-  Removing the Git enrollment first prevents later root syncs recreating the
-  abandoned Application. Verify it is gone and `oci-pihole`/native login remain
-  healthy afterward. No deletion or post-cleanup checks have been reported yet.
+  has no `syncPolicy`. Neither was changed here. The live root had auto-sync
+  disabled, so publication alone did not auto-prune the abandoned Application.
+- With explicit approval, commit `7a84e65` published the inventory removal,
+  generated Application deletion and two updated docs (four files only).
+  Pre-commit hooks, including Application generation, passed. Unrelated work,
+  including `pihole.nix`, was preserved and excluded from the commit.
+- **User-confirmed live cleanup:** context was `oci`; the targeted delete
+  returned `application.argoproj.io "oci-pihole-zitadel-oauth2-proxy" deleted`.
+  The follow-up checks showed `oci-pihole` **Synced/Healthy** and deployment
+  `pihole` **1/1**, up-to-date `1`, available `1`. The user reported
+  "PiHole appears to be working". No broad root sync/prune, Pi-hole restart,
+  DNS change or Secret deletion was part of this cleanup. Do not repeat it.
+  A separate DNS-query test and a post-deletion root-status check were not
+  supplied; do not claim those tests passed.
 - The unpublished `pihole.nix` ingress switch and untracked proxy values still
   exist. Do not include them in a commit/push. Review/reconcile this existing
   user work explicitly rather than discarding it or accidentally deploying it.
@@ -1259,9 +1344,10 @@ based on the supplied preflight.
 
 OCI's intended login cutovers are now complete within the revised scope:
 ArgoCD is on Zitadel and Grafana login works with the accepted manual-Admin
-workaround. Grafana role sync, abandoned setup cleanup and other recorded test
-gaps remain follow-ups. Trinity ArgoCD remains paused for connectivity; global
-Auth0 retirement still waits for the remaining migrations and burn-in.
+workaround. Grafana role sync, review of unpublished proxy/ingress work and unused
+Terraform identity objects, and other recorded test gaps remain follow-ups.
+Trinity ArgoCD browser SSO is also complete (CP-3.1); global Auth0 retirement
+still waits for burn-in and review of remaining consumers and rollback needs.
 
 ---
 

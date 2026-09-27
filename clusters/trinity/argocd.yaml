@@ -15,18 +15,19 @@ configs:
   cm:
     # Public base URL — required so OIDC redirect/callback URLs are correct.
     url: https://trinity.argocd.arendse.nom.za
-    # Native OIDC against Auth0 (same IdP as Grafana / oauth2-proxy). ArgoCD speaks
-    # OIDC directly — it is NOT put behind oauth2-proxy, so the CLI/API/gRPC keep
-    # working and we get role mapping.
+    # Native OIDC against Zitadel using the dedicated trinity client. ArgoCD is
+    # NOT put behind oauth2-proxy; it handles OIDC and RBAC directly. Keep the
+    # built-in `admin` account as a break-glass fallback.
     #
-    # clientID/clientSecret are pulled from the externally-managed `argocd-auth0`
-    # Secret (kept out of Git). That Secret MUST carry the label
+    # clientID/clientSecret are pulled from the externally-managed `argocd-zitadel`
+    # Secret (kept out of Git); retain `argocd-auth0` for rollback.
+    # The active Secret MUST carry the label
     # `app.kubernetes.io/part-of: argocd` for these `$name:key` refs to resolve.
     oidc.config: |
-      name: Auth0
-      issuer: https://arendse.uk.auth0.com/
-      clientID: $argocd-auth0:clientID
-      clientSecret: $argocd-auth0:clientSecret
+      name: Zitadel
+      issuer: https://homelab-jj4izt.eu1.zitadel.cloud
+      clientID: $argocd-zitadel:clientID
+      clientSecret: $argocd-zitadel:clientSecret
       requestedScopes:
         - openid
         - profile
@@ -36,15 +37,14 @@ configs:
           essential: true
 
   rbac:
-    # Match RBAC subjects on the email claim (Auth0 has no groups by default).
+    # Preserve explicit email-based RBAC; org-wide Zitadel login is not an admin grant.
     scopes: "[email]"
-    # Everyone authenticates via Auth0; only this email is admin, the rest get
-    # nothing unless added below.
+    # Only this email is admin; other users get nothing unless added below.
     policy.default: ""
     policy.csv: |
       g, greg.arendse@gmail.com, role:admin
 
-# Dex (Argo's bundled connector proxy) is not needed — Auth0 is wired in directly
+# Dex (Argo's bundled connector proxy) is not needed — Zitadel is wired in directly
 # via configs.cm.oidc.config above.
 dex:
   enabled: false
