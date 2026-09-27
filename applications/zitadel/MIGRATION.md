@@ -89,10 +89,24 @@ Update this as you go so "future you" knows where to resume.
   application access and re-login with "All looks good". Do not repeat apply or
   restart. Keep local admin and both Secrets. The user approved a local checkpoint
   commit; no push is authorized.
-- **Next available checkpoint:** CP-5.1 — Pi-hole's dedicated integration on
-  **oci**. Start with read-only inspection of its current proxy/GitOps ownership
-  and a staged credential/rollback plan; it has not started. Pushing the completed
-  OCI checkpoint requires separate approval.
+- **Skipped by user (oci / CP-5.1):** Pi-hole has no native OIDC/SAML integration;
+  the proposed proxy would add an edge gate, not replace its local login.
+  Preflight on 2026-09-27 confirmed Pi-hole `1/1`, direct ingress to
+  `pihole-web:80`, native login, and no proxy Deployment, Service or credentials
+  Secret. No subsequent Secret creation or deployment has been reported.
+  Keep that working setup and DNS unchanged; the Secret-creation command and
+  proxy/ingress rollout are withdrawn. OCI's in-scope login cutovers are finished
+  with Grafana's accepted manual-Admin workaround, not a fully verified role sync.
+  The user approved cleanup of the abandoned proxy enrollment: its entry in
+  `clusters/oci/apps.yaml` and generated Application are removed locally, while
+  the real Pi-hole enrollment/manifests are retained. Live safety checks are
+  user-supplied: `oci-root` has `automated.enabled: false`; it tracks the proxy
+  Application, which has no finalizers/owner references and reports no managed
+  resources. Publication alone will not remove it automatically. The user
+  approved committing and pushing only the four cleanup files. After publication,
+  the user removes only that Application on **oci**, confirming the revision and
+  context first. Live deletion is NOT yet verified. Unpublished proxy/ingress
+  work must stay out of the cleanup commit.
 - **Deferred Grafana follow-up:** diagnose the discrepancy between
   `applications/monitoring/values.yaml`, ArgoCD's rendered configuration and
   effective Grafana settings, including environment overrides and role sync.
@@ -130,7 +144,7 @@ Update this as you go so "future you" knows where to resume.
 | 2.1 | Grafana on OCI: login works; manual Admin workaround accepted; automatic role sync/config mismatch and remaining verification deferred; proceed to CP-3.1 | ☐ |
 | 3.1 | Paused: trinity connectivity issues; resume at local-admin preflight before any SSO changes | ☐ |
 | 4.1 | Complete: OCI Terraform apply, Zitadel browser login/issuer/email, CanI sync permission, rollout/application access/re-login user-confirmed; test gaps recorded below | ☑ |
-| 5.1 | Move Pi-hole to its dedicated project/application (OCI) | ☐ |
+| 5.1 | Skipped: retain native login; proxy enrollment removed locally, publication/live removal pending | — |
 | 6.1 | Tear down the PoC rig | ☐ |
 | 6.2 | Remove Auth0 runtime Secrets | ☐ |
 | 6.3 | Retire the Auth0 Terraform + provider | ☐ |
@@ -147,8 +161,8 @@ Context worth remembering between sessions.
   remains the rollback path. `imports-pending.tf` was never completed on purpose
   (adopting the tenant/database connection would be throwaway work).
 - **Existing layout (already applied):** the `arendse` org contains `ZITADEL`
-  (built-in system project — do not touch), `trinity` (hand-made registrations,
-  including the working Pi-hole client), and Terraform-managed `homelab`
+  (built-in system project — do not touch), `trinity` (hand-made registrations;
+  the presumed Pi-hole consumer was not present at CP-5.1 preflight), and Terraform-managed `homelab`
   (four legacy clients; its `oauth2_proxy` client is now the PoC rollback path).
   Creating another org was rejected because it requires **IAM_OWNER**.
 - **Target registrations created (CP-0.6 applied; only the PoC migrated so far):**
@@ -158,9 +172,11 @@ Context worth remembering between sessions.
   separate media production/PoC clients and two native ArgoCD clients. See
   CP-0.4–0.7. Preserve all existing clients until their replacements are tested
   and their consumers migrated.
-- **Pi-hole stays independent.** It gets its own project and application; it
-  will not inherit the shared media access policy. Its eventual proxy layout
-  is undecided. ArgoCD continues using native OIDC, not a proxy.
+- **Pi-hole SSO skipped (2026-09-27).** The user does not want a proxy-only
+  login gate because Pi-hole lacks native OIDC/SAML integration. Keep Pi-hole's
+  native authentication and direct ingress; do not deploy the prepared proxy.
+  The already-created Terraform `pihole` project/client is a cleanup candidate,
+  not authorization for a destroy. ArgoCD continues using native OIDC.
 - **Secret provisioning remains undecided.** This design does not add Terraform
   management of Kubernetes Secrets. A project defines the access boundary (and
   can own roles/assignments later); an OIDC application owns client credentials;
@@ -275,7 +291,7 @@ First set the instance domain and org ID in `.auto.tfvars` (git-ignored):
 
 ```hcl
 # The INSTANCE domain — not the org name. Same host as the oidc-issuer-url the
-# working Pi-hole/PoC proxies already use.
+# working media PoC proxy uses.
 zitadel_domain = "homelab-jj4izt.eu1.zitadel.cloud"
 zitadel_org_id = "380143417033860850"   # the "arendse" org
 ```
@@ -294,8 +310,8 @@ terraform apply
 - **Verify:** `terraform plan` is clean afterward.
 - **Permissions:** the PAT's service user needs **ORG_OWNER** on `arendse`. No
   instance-level IAM_OWNER is required (see Decisions log).
-- Pi-hole keeps working throughout on its own app registration in the `trinity`
-  project.
+- Pi-hole stays unchanged. CP-5.1 later confirmed it was serving its own login
+  directly, not using the presumed `trinity` project client.
 
 ### CP-0.2 — Capture the generated credentials
 You'll paste these into each app's Secret as you go. Read them on demand:
@@ -1176,39 +1192,76 @@ until migration and burn-in complete.
 
 ## Phase 5 — Pi-hole (independent integration, OCI)
 
-Pi-hole already uses Zitadel through `pihole-zitadel-oauth2-proxy`, with its
-hand-made client in the `trinity` **Zitadel project** (not the hosting cluster).
-It runs on **oci**. Leave it working until this checkpoint; do not fold it into
-media's shared client or access policy.
+**Corrected baseline (user-supplied OCI checks, 2026-09-27):** Pi-hole is NOT
+currently behind Zitadel. `pihole` is `1/1`; Traefik's `pihole-ingress` routes
+`pihole.arendse.nom.za/` directly to `pihole-web:80`. The browser reaches
+Pi-hole's own login. The namespace has no proxy Deployment, Service or OAuth
+Secret. The original assumption of a working hand-made `trinity` project
+integration was incorrect; retain those registrations until consumers are
+inventoried, but do not treat them as a verified rollback path.
 
-### CP-5.1 — Move Pi-hole to its dedicated project/application
+### CP-5.1 — Pi-hole SSO (skipped)
 
-**Target cluster: oci.** Confirm the context before any write.
+**Decision (2026-09-27): skipped at the user's request, not a successful SSO
+cutover.** Pi-hole's [native authentication](https://docs.pi-hole.net/api/auth/)
+uses a local password (optionally TOTP) and sessions, not OIDC/SAML. The proposed
+oauth2-proxy would challenge users with Zitadel before Pi-hole's own login; it
+would not map Zitadel identities into Pi-hole or replace local authentication.
+Do not disable Pi-hole's password to simulate native SSO.
 
-1. After the preparation gate, confirm the new `pihole` project's client,
-   callback and temporary org-wide policy from CP-0.6 (no user assignments).
-   Decide the proxy arrangement here; retaining the current per-app reverse
-   proxy is the smallest change. Keep independent credentials and cookie/session
-   configuration regardless of topology.
-2. Back up the existing Secret securely. Read the verified new credentials:
-   ```bash
-   CID=$(terraform -chdir=infrastructure/identity output -json zitadel_sso_client_ids | jq -er .pihole)
-   SEC=$(terraform -chdir=infrastructure/identity output -json zitadel_sso_client_secrets | jq -er .pihole)
-   ```
-   Update the Pi-hole integration's credentials and restart its proxy. If
-   topology or values must change, prepare the exact GitOps rollout order before
-   writing anything; do not combine an unplanned proxy redesign with the swap.
-3. In fresh sessions, confirm an `arendse` user can reach
-   `https://pihole.arendse.nom.za` without a Pi-hole project role, and that
-   unauthenticated access is challenged. Test outside-org denial when available;
-   record unavailable negative tests honestly. Retain any Pi-hole-local
-   authentication; this is an edge access gate, not a local admin grant.
+**Keep:** the direct Traefik route to `pihole-web:80`, `pihole-secret`, native
+login, TLS, DNS and storage. No cluster changes were made by the agent. The user
+has not reported running the now-withdrawn Secret-creation command or either
+rollout stage. No SSO verification is claimed and no live rollback is needed
+based on the supplied preflight.
 
-**Done:** Pi-hole uses its dedicated project/client with independently managed
-credentials; org-wide login is temporary, per-project users are deferred.
-**Rollback:** restore its previous Secret and any previous proxy configuration,
-then restart on **oci**. The issuer stays Zitadel; retain the old client until
-Phase 6.
+**Abandoned setup — local enrollment cleanup prepared; live cleanup pending:**
+
+- The user approved removal of the unused enrollment. Removed only the proxy
+  entry from `clusters/oci/apps.yaml` and
+  `clusters/oci/rendered/pihole-zitadel-oauth2-proxy.yaml`. The generator does not
+  remove stale files, so deleting the generated Application is necessary too.
+  The separate `oci-pihole` enrollment, its generated Application and Pi-hole
+  workload manifests remain unchanged.
+- Last live result: `oci-pihole-zitadel-oauth2-proxy` reports `ComparisonError`
+  because its values are missing from Git. Local removal does not resolve that
+  until published and the live Application is removed. Do not publish the
+  untracked values to fix the error; that would deploy the abandoned proxy.
+- **Live safety check supplied by the user:** `oci-root` has
+  `automated: {enabled: false}`, no finalizers/owner references, and lists the
+  proxy Application among its resources. The proxy's tracking annotation is
+  `oci-root:argoproj.io/Application:argocd/oci-pihole-zitadel-oauth2-proxy`;
+  its finalizers and owner references are empty and `status.resources` is empty.
+  Its own automated prune/self-heal does not make the parent remove it.
+- The repository has conflicting root definitions: `clusters/oci/root.yaml`
+  enables automated prune/self-heal, while Terraform's
+  `kubernetes_manifest.argocd_root` in `infrastructure/kubernetes/argocd.tf`
+  has no `syncPolicy`. Neither is changed here. Use the verified live state:
+  **publishing the removal alone will not auto-prune this Application.**
+- The user approved committing/pushing the inventory removal, generated
+  Application deletion and the two updated docs (four files only). After
+  confirming the new Git revision is published, the user confirms **oci** and deletes only
+  `argocd/oci-pihole-zitadel-oauth2-proxy`. Based on the supplied state, there is
+  no ArgoCD resource-deletion finalizer and no reported managed resource to
+  cascade-delete. Recheck if the cleanup is delayed or live state changes.
+  Do not enable root auto-sync or sync/prune the whole root for this cleanup.
+  Removing the Git enrollment first prevents later root syncs recreating the
+  abandoned Application. Verify it is gone and `oci-pihole`/native login remain
+  healthy afterward. No deletion or post-cleanup checks have been reported yet.
+- The unpublished `pihole.nix` ingress switch and untracked proxy values still
+  exist. Do not include them in a commit/push. Review/reconcile this existing
+  user work explicitly rather than discarding it or accidentally deploying it.
+- The Terraform-managed `pihole` project (`390167990911416524`) and OIDC client
+  were already created. Leave them for an explicit, reviewed Terraform cleanup
+  after checking consumers; do not destroy them as part of this decision.
+- If the user did create the proxy Secret after preflight, inventory it during
+  cleanup; do not assume it exists or delete it blindly.
+
+OCI's intended login cutovers are now complete within the revised scope:
+ArgoCD is on Zitadel and Grafana login works with the accepted manual-Admin
+workaround. Grafana role sync, abandoned setup cleanup and other recorded test
+gaps remain follow-ups. Trinity ArgoCD remains paused for connectivity; global
+Auth0 retirement still waits for the remaining migrations and burn-in.
 
 ---
 
@@ -1238,10 +1291,13 @@ file-deletion exercise — there is nothing for Terraform to destroy. Delete the
 > leave it as an emergency fallback for a while.
 
 ### CP-6.4 — Clean up the superseded Zitadel objects
-After every integration has moved to its target project inside **`arendse`**
-and passed burn-in, inventory the remaining consumers before removing anything:
+After every in-scope integration has moved to its target project inside
+**`arendse`** and passed burn-in, inventory consumers before removing anything:
+- Pi-hole SSO was skipped. Review the unused Terraform `pihole` project/client
+  for removal through a separately approved plan; leave it until that review.
 - Remove unused hand-made PoC/Pi-hole clients in the `trinity` project only
-  after CP-5.1 and the PoC teardown. Keep the project if anything else uses it.
+  after checking consumers and completing the PoC teardown. Keep the project
+  if anything else uses it.
 - Retire the original Terraform-managed `homelab` clients/project through
   Terraform, not console deletion. Review the exact planned deletions and
   retire their legacy outputs only when no consumer or rollback needs them.
@@ -1275,7 +1331,7 @@ match. The user confirms the named cluster's context before any write.
 | ArgoCD trinity | `https://arendse.uk.auth0.com/` in `clusters/trinity/argocd.yaml` | `argocd-auth0` |
 | ArgoCD OCI | `https://arendse.uk.auth0.com/` in `infrastructure/kubernetes/argocd.yaml` | `argocd-auth0` |
 | Media PoC (trinity) | Unchanged Zitadel issuer; restore previous proxy config if changed | `oauth2-proxy-zitadel` with original `homelab` credentials |
-| Pi-hole (oci) | Unchanged Zitadel issuer; restore previous proxy config if changed | `pihole-zitadel-oauth2-proxy` with original `trinity` project credentials |
+| Pi-hole (oci) | SSO skipped; keep the existing direct route to `pihole-web:80` | Keep native `pihole-secret`; no OAuth Secret creation reported |
 
 The Auth0 client ids live in `infrastructure/identity/auth0.tf`; the secrets are
 in your password manager / Auth0 dashboard (never in Git).
