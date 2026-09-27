@@ -59,3 +59,45 @@ variable "longhorn_backup_retain" {
   type        = number
   default     = 1
 }
+
+variable "wireguard_gateway_instance_name" {
+  description = <<-EOT
+    Must match infrastructure/variables.tf's wireguard_gateway_instance_name —
+    same OCI pool instance, referenced here to find its node in the oci
+    cluster (kubectl get nodes -o wide, matched by InternalIP) so the
+    Deployment's nodeSelector and the route DaemonSet's ConfigMap line up
+    with the NLB backend pinned in infrastructure/network/wireguard-trinity.tf.
+    This variable isn't consumed directly by Terraform here (Kubernetes
+    doesn't know OCI instance names) — it's documentation for whoever runs
+    `kubectl label node` per docs/wireguard-trinity.md. Kept as a variable
+    rather than a bare comment so `terraform plan` output makes the
+    dependency on that manual step explicit.
+  EOT
+  type        = string
+}
+
+variable "wireguard_gateway_private_ip" {
+  description = <<-EOT
+    Private IP of the pinned WireGuard gateway instance — set this from
+    `terraform output wireguard_gateway_instance_private_ip` in
+    infrastructure/network after applying that root module. Consumed by
+    the route-propagation DaemonSet's ConfigMap in wireguard-trinity.tf so
+    non-gateway nodes know the next-hop for Trinity's pod/service CIDRs.
+  EOT
+  type        = string
+
+  validation {
+    condition     = can(regex("^((25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])$", var.wireguard_gateway_private_ip))
+    error_message = "wireguard_gateway_private_ip must be a valid IPv4 address"
+  }
+}
+
+variable "trinity_pod_cidr" {
+  description = "Trinity cluster's pod CIDR, routed via the WireGuard gateway node."
+  type        = string
+}
+
+variable "trinity_svc_cidr" {
+  description = "Trinity cluster's service CIDR, routed via the WireGuard gateway node."
+  type        = string
+}
