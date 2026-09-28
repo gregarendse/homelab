@@ -40,8 +40,8 @@
                 "command": [
                   "mktxp"
                 ],
-                "image": "ghcr.io/akpw/mktxp:latest",
-                "imagePullPolicy": "Always",
+                "image": "ghcr.io/akpw/mktxp:stable-20240317134614",
+                "imagePullPolicy": "IfNotPresent",
                 "name": "mktxp",
                 "ports": [
                   {
