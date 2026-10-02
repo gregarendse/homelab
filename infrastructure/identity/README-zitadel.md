@@ -2,8 +2,13 @@
 
 This manages Zitadel Cloud projects and OIDC apps inside the **existing
 `arendse` organization**, referenced by `var.zitadel_org_id`. It does not create
-or look up the org. Auth0 resources are commented out and were **never imported
-into state**; the live Auth0 tenant remains untouched for rollback.
+or look up the org. The user-supplied state inventory contains **only Zitadel**;
+Auth0 was never imported. Its obsolete Terraform files, provider declaration,
+variables and lock entry are removed. All Zitadel resources/outputs and the
+locked provider version `3.3.0` are unchanged. The user-run identity plan reported
+**No changes**; no apply is needed. The live Auth0 tenant and runtime Secrets
+remain untouched pending separate deletion approval (Phase 6 in
+`applications/zitadel/MIGRATION.md`).
 
 **CP-0.5–0.6 are complete based on user confirmation:** the user reported
 **10 added, 0 changed, 0 destroyed** and confirmed the requested post-apply
@@ -47,16 +52,20 @@ users in `arendse` may log in initially, without roles or per-user assignments.
 No project grants, roles, assignments, policy resources or Kubernetes providers
 are added. The user deferred Terraform role adoption and selected a temporary
 Grafana Helm policy granting organization Admin to every successful Zitadel login.
-The user approved committing/pushing that policy; its OCI rollout and Admin
-access still need user verification. No Terraform changes are required.
+The approved policy was pushed as `6cced05`; the user confirmed OCI sync/health
+and rollout at that revision. The user can log in but reports that the Admin
+configuration did not take effect and manually assigned Admin. They accepted
+this workaround and deferred investigation to continue with ArgoCD on trinity.
+Automatic role sync remains unresolved; no Terraform changes are made here.
 
 **Self-registration must remain disabled.** The user reports it is disabled;
 this has not been independently verified, and Terraform does not manage that
 policy. Future users added to `arendse` automatically gain login to all four
 projects. **Tighten access before adding users or re-enabling signup**; defer
 per-project users/role checks until wanted. App RBAC remains separate. The
-temporary Grafana policy is an explicit exception: every admitted Zitadel user
-gets **Main Org Admin**, never server-wide GrafanaAdmin. ArgoCD is unchanged.
+intended Grafana policy is an explicit exception: every admitted Zitadel user
+should get **Main Org Admin**, never server-wide GrafanaAdmin. The live mismatch
+is unresolved; this is not verified behavior. ArgoCD is unchanged.
 
 The legacy `homelab` project keeps both checks disabled; its existing behavior
 is not evidence of the new org boundary. Follow `applications/zitadel/MIGRATION.md`
@@ -67,10 +76,20 @@ negative test honestly, not as a pass; a within-org user without a role is allow
 ### Grafana: temporary Admin policy; role adoption deferred
 
 `applications/monitoring/values.yaml` now uses the JMESPath constant
-`role_attribute_path: "'Admin'"` with `skip_org_role_sync: false`. Every successful
-Zitadel login gets organization Admin, regardless of assigned project roles.
+`role_attribute_path: "'Admin'"` with `skip_org_role_sync: false`. This is intended
+to grant organization Admin on every successful Zitadel login, regardless of
+assigned project roles; the user reports needing a manual Admin assignment.
 `allow_assign_grafana_admin: false` and email lookup remain off; local admin stays
 available. This needs **no Terraform apply, grant ID, custom claim or Action**.
+
+**Optional follow-up, not an Auth0-retirement prerequisite:** after migration,
+trace the Grafana Helm
+values through ArgoCD to effective settings, including environment overrides and
+role sync. Incomplete `infrastructure/identity/` and `kubernetes/` configuration
+is the user's hypothesis, not a confirmed cause; cleanup is not a proven fix.
+Reconcile ownership before applying changes. Manual org roles may be overwritten
+on later OAuth login; retain local admin access. Remaining live-settings,
+automatic Admin and dashboard/re-login/refresh checks are deferred, not passed.
 
 The agent's untracked `grafana-roles.tf` draft was removed before any import or
 apply. The manually created Zitadel roles/assignments remain untouched. No role
@@ -116,9 +135,12 @@ Terraform talks to the Zitadel management API as a service (machine) user:
 
    Or export `TF_VAR_zitadel_domain` / `TF_VAR_zitadel_access_token`.
 
-> This module also configures the `auth0` provider, so `terraform plan` expects
-> the `auth0_*` variables to be present too. Keep them in `.auto.tfvars` (they're
-> already required for the Auth0 side).
+> This root no longer uses Auth0. Before planning, remove `auth0_domain`,
+> `auth0_client_id` and `auth0_client_secret` from private variable files and
+> stop supplying them through CLI/automation; unset any `TF_VAR_auth0_*` exports.
+> Leave all Zitadel and backend inputs intact. Private files/credentials were
+> not inspected or changed by the agent. See [README-auth0.md](README-auth0.md)
+> for the retirement boundary; no live client or Secret is deleted by this edit.
 
 ## 2. CP-0.5–0.6 complete; preparation reference
 

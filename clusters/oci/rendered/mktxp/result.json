@@ -11,7 +11,7 @@
         },
         "labels": {
           "app": "mktxp",
-          "kubenix/hash": "3b57e960e69d6440c42e1a89c94822a0af7e453f"
+          "kubenix/hash": "d57f9af448186ef43e468d526a5becc3be10ba71"
         },
         "name": "mktxp",
         "namespace": "monitoring"
@@ -40,8 +40,8 @@
                 "command": [
                   "mktxp"
                 ],
-                "image": "ghcr.io/akpw/mktxp:latest",
-                "imagePullPolicy": "Always",
+                "image": "ghcr.io/akpw/mktxp:stable-20240317134614",
+                "imagePullPolicy": "IfNotPresent",
                 "name": "mktxp",
                 "ports": [
                   {
@@ -126,7 +126,7 @@
           "kubenix/project-name": "kubenix"
         },
         "labels": {
-          "kubenix/hash": "3b57e960e69d6440c42e1a89c94822a0af7e453f"
+          "kubenix/hash": "d57f9af448186ef43e468d526a5becc3be10ba71"
         },
         "name": "mktxp-config",
         "namespace": "monitoring"
@@ -142,7 +142,7 @@
         },
         "labels": {
           "app": "mktxp",
-          "kubenix/hash": "3b57e960e69d6440c42e1a89c94822a0af7e453f"
+          "kubenix/hash": "d57f9af448186ef43e468d526a5becc3be10ba71"
         },
         "name": "mktxp",
         "namespace": "monitoring"
@@ -168,7 +168,7 @@
       "metadata": {
         "labels": {
           "app": "mktxp",
-          "kubenix/hash": "3b57e960e69d6440c42e1a89c94822a0af7e453f",
+          "kubenix/hash": "d57f9af448186ef43e468d526a5becc3be10ba71",
           "release": "monitoring"
         },
         "name": "mktxp",
@@ -198,7 +198,7 @@
   ],
   "kind": "List",
   "labels": {
-    "kubenix/hash": "3b57e960e69d6440c42e1a89c94822a0af7e453f",
+    "kubenix/hash": "d57f9af448186ef43e468d526a5becc3be10ba71",
     "kubenix/k8s-version": "1.28",
     "kubenix/project-name": "kubenix"
   }

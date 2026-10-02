@@ -18,10 +18,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version-file: src/go/ci/go.mod
           cache: true
@@ -32,21 +32,31 @@ jobs:
           go test -v ./...
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build Docker image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: src/go/ci
           load: true
           tags: ci-tool:test
 
+      # Same argv the action passes. The action itself always runs ghcr.io/.../ci:latest,
+      # so this is what proves the PR image accepts those flags and writes stdout.
       - name: Test running Docker image
         run: |
+          set -euo pipefail
           docker run --rm ci-tool:test argocd --help
-
-      - name: Test GitHub Action
-        uses: ./.github/actions/ci-tool
-        with:
-          image: ci-tool:test
-          command: argocd --help
+          out=$(mktemp)
+          docker run --rm \
+            -v "$PWD:$PWD" -w "$PWD" \
+            -v "$out:$out" \
+            -e GITHUB_OUTPUT="$out" \
+            ci-tool:test \
+            argocd list-rendered \
+            --repo-url=https://github.com/example/homelab.git \
+            --target-revision=master \
+            --clusters-dir=clusters \
+            --argo-namespace=argocd \
+            --argo-project=default
+          grep -q "$(printf '\t')" "$out"

@@ -1,9 +1,44 @@
 configs:
   params:
-    # Disable TLS on the server — Traefik handles TLS termination
+    # Disable TLS on the server — Traefik handles TLS termination, and we talk
+    # plain HTTP to the argocd-server pod (avoids the double-TLS / redirect-loop
+    # issue behind a TLS-terminating ingress).
     server.insecure: true
 
-# SSO provider — not needed when using the built-in admin account
+  cm:
+    # Public base URL — required so OIDC redirect/callback URLs are correct.
+    url: https://argocd.arendse.nom.za
+    # Native OIDC against Zitadel using the dedicated OCI client. ArgoCD is NOT
+    # put behind oauth2-proxy; it handles OIDC and RBAC directly. Keep the built-in
+    # `admin` account as a break-glass fallback.
+    #
+    # clientID/clientSecret are pulled from the externally-managed `argocd-zitadel`
+    # Secret (kept out of Git); retain `argocd-auth0` for rollback.
+    # The active Secret MUST carry the label
+    # `app.kubernetes.io/part-of: argocd` for these `$name:key` refs to resolve.
+    oidc.config: |
+      name: Zitadel
+      issuer: https://homelab-jj4izt.eu1.zitadel.cloud
+      clientID: $argocd-zitadel:clientID
+      clientSecret: $argocd-zitadel:clientSecret
+      requestedScopes:
+        - openid
+        - profile
+        - email
+      requestedIDTokenClaims:
+        email:
+          essential: true
+
+  rbac:
+    # Preserve explicit email-based RBAC; org-wide Zitadel login is not an admin grant.
+    scopes: "[email]"
+    # Only this email is admin; other users get nothing unless added below.
+    policy.default: ""
+    policy.csv: |
+      g, greg.arendse@gmail.com, role:admin
+
+# Dex (Argo's bundled connector proxy) is not needed — Zitadel is wired in directly
+# via configs.cm.oidc.config above.
 dex:
   enabled: false
 

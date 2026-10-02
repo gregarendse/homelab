@@ -18,21 +18,29 @@ jobs:
 
     steps:
       - name: Checkout PR branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.head_ref }}
 
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@v22
+        uses: DeterminateSystems/nix-installer-action@v23
 
       - name: Enable Nix cache
-        uses: DeterminateSystems/magic-nix-cache-action@v14
+        uses: DeterminateSystems/magic-nix-cache-action@v15
 
       - name: List rendered kubenix apps
         id: list-rendered
         uses: ./.github/actions/ci-tool
         with:
-          command: argocd list-rendered
+          command: list-rendered
+          repo-url: https://github.com/${{ github.repository }}.git
 
       - name: Render kubenix apps
         env:
@@ -57,7 +65,7 @@ jobs:
       - name: Generate Argo CD ApplicationSets
         uses: ./.github/actions/ci-tool
         with:
-          command: argocd generate --repo-url "https://github.com/${{ github.repository }}.git" --target-revision master
+          repo-url: https://github.com/${{ github.repository }}.git
 
       - name: Commit generated changes
         shell: bash
