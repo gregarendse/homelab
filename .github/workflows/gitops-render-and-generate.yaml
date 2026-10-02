@@ -13,7 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      packages: read
     if: "!contains(github.event.pull_request.title, '[skip gitops]')"
 
     steps:
@@ -22,17 +21,11 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       # action.yml pins docker://ghcr.io/gregarendse/ci:latest and cannot take an
       # expression. The runner's docker run does not pass --pull, so this local
-      # tag is used instead of the published image, which lacks these flags and
-      # does not write GITHUB_OUTPUT.
+      # tag is what the action runs. That keeps a PR's src/go/ci changes in
+      # front of whatever is currently published. No registry login: this job
+      # builds the tag and never pulls it.
       - name: Build CI image for this PR
         run: docker build -t ghcr.io/gregarendse/ci:latest src/go/ci
 
@@ -69,7 +62,7 @@ jobs:
             cp "$app_path/result.json" "clusters/$cluster/rendered/$app_name/result.json"
           done
 
-      - name: Generate Argo CD ApplicationSets
+      - name: Generate Argo CD Applications
         uses: ./.github/actions/ci-tool
         with:
           repo-url: https://github.com/${{ github.repository }}.git
@@ -87,5 +80,5 @@ jobs:
             exit 0
           fi
 
-          git commit -m "chore(gitops): update rendered manifests and appsets [skip gitops]"
+          git commit -m "chore(gitops): update rendered manifests and Applications [skip gitops]"
           git push
