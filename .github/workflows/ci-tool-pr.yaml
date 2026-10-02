@@ -41,12 +41,22 @@ jobs:
           load: true
           tags: ci-tool:test
 
+      # Same argv the action passes. The action itself always runs ghcr.io/.../ci:latest,
+      # so this is what proves the PR image accepts those flags and writes stdout.
       - name: Test running Docker image
         run: |
+          set -euo pipefail
           docker run --rm ci-tool:test argocd --help
-
-      - name: Test GitHub Action
-        uses: ./.github/actions/ci-tool
-        with:
-          image: ci-tool:test
-          command: argocd --help
+          out=$(mktemp)
+          docker run --rm \
+            -v "$PWD:$PWD" -w "$PWD" \
+            -v "$out:$out" \
+            -e GITHUB_OUTPUT="$out" \
+            ci-tool:test \
+            argocd list-rendered \
+            --repo-url=https://github.com/example/homelab.git \
+            --target-revision=master \
+            --clusters-dir=clusters \
+            --argo-namespace=argocd \
+            --argo-project=default
+          grep -q "$(printf '\t')" "$out"

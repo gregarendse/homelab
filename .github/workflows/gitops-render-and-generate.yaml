@@ -28,17 +28,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
-      - name: Ensure CI Docker image
-        shell: bash
-        run: |
-          set -euo pipefail
-          CONTAINER_IMAGE="ghcr.io/$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')/ci:latest"
-          if ! docker pull "$CONTAINER_IMAGE"; then
-            echo "Image $CONTAINER_IMAGE not found in GHCR, building locally..."
-            docker build -t "$CONTAINER_IMAGE" src/go/ci
-          fi
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v23
@@ -50,7 +39,8 @@ jobs:
         id: list-rendered
         uses: ./.github/actions/ci-tool
         with:
-          command: argocd list-rendered
+          command: list-rendered
+          repo-url: https://github.com/${{ github.repository }}.git
 
       - name: Render kubenix apps
         env:
@@ -75,7 +65,7 @@ jobs:
       - name: Generate Argo CD ApplicationSets
         uses: ./.github/actions/ci-tool
         with:
-          command: argocd generate --repo-url "https://github.com/${{ github.repository }}.git" --target-revision master
+          repo-url: https://github.com/${{ github.repository }}.git
 
       - name: Commit generated changes
         shell: bash
