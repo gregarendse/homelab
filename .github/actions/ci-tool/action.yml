@@ -32,6 +32,8 @@ outputs:
 
 runs:
   using: docker
+  # Cannot be an expression. Callers must docker build -t this name first;
+  # otherwise docker run pulls the published image, which may not match this argv.
   image: docker://ghcr.io/gregarendse/ci:latest
   # /ci is a cobra binary. Values have to be flags; bare positionals are ignored.
   # Equals form keeps an empty repo-url from swallowing the next flag.

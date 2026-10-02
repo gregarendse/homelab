@@ -29,6 +29,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # action.yml pins docker://ghcr.io/gregarendse/ci:latest and cannot take an
+      # expression. The runner's docker run does not pass --pull, so this local
+      # tag is used instead of the published image, which lacks these flags and
+      # does not write GITHUB_OUTPUT.
+      - name: Build CI image for this PR
+        run: docker build -t ghcr.io/gregarendse/ci:latest src/go/ci
+
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v23
 
