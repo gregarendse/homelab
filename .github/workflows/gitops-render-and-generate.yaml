@@ -28,17 +28,13 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
 
-      - name: Ensure CI Docker image
-        shell: bash
-        run: |
-          set -euo pipefail
-          CONTAINER_IMAGE="ghcr.io/$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')/ci:latest"
-          if ! docker pull "$CONTAINER_IMAGE"; then
-            echo "Image $CONTAINER_IMAGE not found in GHCR, building locally..."
-            docker build -t "$CONTAINER_IMAGE" src/go/ci
-          fi
+      # action.yml pins docker://ghcr.io/gregarendse/ci:latest and cannot take an
+      # expression. The runner's docker run does not pass --pull, so this local
+      # tag is used instead of the published image, which lacks these flags and
+      # does not write GITHUB_OUTPUT.
+      - name: Build CI image for this PR
+        run: docker build -t ghcr.io/gregarendse/ci:latest src/go/ci
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v23
@@ -46,15 +42,22 @@ jobs:
       - name: Enable Nix cache
         uses: DeterminateSystems/magic-nix-cache-action@v15
 
+      - name: List rendered kubenix apps
+        id: list-rendered
+        uses: ./.github/actions/ci-tool
+        with:
+          command: list-rendered
+          repo-url: https://github.com/${{ github.repository }}.git
+
       - name: Render kubenix apps
+        env:
+          RENDERED_APPS: ${{ steps.list-rendered.outputs.stdout }}
         shell: bash
         run: |
           set -euo pipefail
 
-          CONTAINER_IMAGE="ghcr.io/$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')/ci:latest"
-
-          docker run --rm -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" -w "$GITHUB_WORKSPACE" "$CONTAINER_IMAGE" argocd list-rendered \
-          | while IFS=$'\t' read -r cluster app_name app_path; do
+          echo "$RENDERED_APPS" | while IFS=$'\t' read -r cluster app_name app_path; do
+            [ -z "$cluster" ] && continue
             echo "Rendering $cluster/$app_name from $app_path"
             test -d "$app_path"
 
@@ -67,13 +70,9 @@ jobs:
           done
 
       - name: Generate Argo CD ApplicationSets
-        shell: bash
-        run: |
-          CONTAINER_IMAGE="ghcr.io/$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')/ci:latest"
-
-          docker run --rm -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" -w "$GITHUB_WORKSPACE" "$CONTAINER_IMAGE" argocd generate \
-            --repo-url "https://github.com/${{ github.repository }}.git" \
-            --target-revision master
+        uses: ./.github/actions/ci-tool
+        with:
+          repo-url: https://github.com/${{ github.repository }}.git
 
       - name: Commit generated changes
         shell: bash

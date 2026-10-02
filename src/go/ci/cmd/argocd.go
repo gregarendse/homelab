@@ -5,7 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"text/template"
+	"time"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -288,6 +290,7 @@ var argocdListRenderedCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		var b strings.Builder
 		for _, cluster := range clusters {
 			inv, err := loadInventory(filepath.Join(argocdClustersDir, cluster, "apps.yaml"))
 			if err != nil {
@@ -295,12 +298,33 @@ var argocdListRenderedCmd = &cobra.Command{
 			}
 			for _, a := range inv.Apps {
 				if a.Type == "rendered" {
-					fmt.Printf("%s\t%s\t%s\n", cluster, a.Name, a.Path)
+					fmt.Fprintf(&b, "%s\t%s\t%s\n", cluster, a.Name, a.Path)
 				}
 			}
 		}
-		return nil
+		return emitStdout(b.String())
 	},
+}
+
+// emitStdout prints s and, when running as a Docker action, records it as the
+// stdout output. The scratch image has no shell to do that itself.
+func emitStdout(s string) error {
+	fmt.Print(s)
+	path := os.Getenv("GITHUB_OUTPUT")
+	if path == "" {
+		return nil
+	}
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0)
+	if err != nil {
+		return fmt.Errorf("open GITHUB_OUTPUT: %w", err)
+	}
+	defer f.Close()
+	delim := fmt.Sprintf("gha_%d_%d", os.Getpid(), time.Now().UnixNano())
+	_, err = fmt.Fprintf(f, "stdout<<%s\n%s\n%s\n", delim, strings.TrimRight(s, "\n"), delim)
+	if err != nil {
+		return fmt.Errorf("write GITHUB_OUTPUT: %w", err)
+	}
+	return nil
 }
 
 func init() {
@@ -308,10 +332,12 @@ func init() {
 	argocdCmd.AddCommand(argocdGenerateCmd)
 	argocdCmd.AddCommand(argocdListRenderedCmd)
 
-	argocdCmd.PersistentFlags().StringVar(&argocdClustersDir, "clusters-dir", "clusters", "Path to clusters directory")
-
-	argocdGenerateCmd.Flags().StringVar(&argocdRepoURL, "repo-url", "", "Git repository URL")
-	argocdGenerateCmd.Flags().StringVar(&argocdTargetRevision, "target-revision", "master", "Git target revision")
-	argocdGenerateCmd.Flags().StringVar(&argocdArgoNamespace, "argo-namespace", "argocd", "Argo CD namespace")
-	argocdGenerateCmd.Flags().StringVar(&argocdArgoProject, "argo-project", "default", "Argo CD project")
+	// Persistent so the GitHub action can pass one argv to both subcommands.
+	// list-rendered ignores the generate-only flags.
+	flags := argocdCmd.PersistentFlags()
+	flags.StringVar(&argocdClustersDir, "clusters-dir", "clusters", "Path to clusters directory")
+	flags.StringVar(&argocdRepoURL, "repo-url", "", "Git repository URL")
+	flags.StringVar(&argocdTargetRevision, "target-revision", "master", "Git target revision")
+	flags.StringVar(&argocdArgoNamespace, "argo-namespace", "argocd", "Argo CD namespace")
+	flags.StringVar(&argocdArgoProject, "argo-project", "default", "Argo CD project")
 }

@@ -1,0 +1,47 @@
+name: CI Tool
+description: Run a homelab CI tool command from the published container image
+
+inputs:
+  command:
+    description: "Subcommand to run. One of: generate, list-rendered"
+    required: false
+    default: "generate"
+  repo-url:
+    description: Git repository URL written into generated Applications. Required for generate.
+    required: true
+  target-revision:
+    description: Git revision written into generated Applications
+    required: false
+    default: master
+  clusters-dir:
+    description: Path to the clusters directory, relative to the workspace
+    required: false
+    default: clusters
+  argo-namespace:
+    description: Argo CD namespace written into generated Applications
+    required: false
+    default: argocd
+  argo-project:
+    description: Argo CD project written into generated Applications
+    required: false
+    default: default
+
+outputs:
+  stdout:
+    description: Standard output from the command. list-rendered writes TSV (cluster, name, path).
+
+runs:
+  using: docker
+  # Cannot be an expression. Callers must docker build -t this name first;
+  # otherwise docker run pulls the published image, which may not match this argv.
+  image: docker://ghcr.io/gregarendse/ci:latest
+  # /ci is a cobra binary. Values have to be flags; bare positionals are ignored.
+  # Equals form keeps an empty repo-url from swallowing the next flag.
+  args:
+    - argocd
+    - ${{ inputs.command }}
+    - --repo-url=${{ inputs['repo-url'] }}
+    - --target-revision=${{ inputs['target-revision'] }}
+    - --clusters-dir=${{ inputs['clusters-dir'] }}
+    - --argo-namespace=${{ inputs['argo-namespace'] }}
+    - --argo-project=${{ inputs['argo-project'] }}
