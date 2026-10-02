@@ -1,45 +1,54 @@
-name: CI Tool
-description: Run a homelab CI tool command from the published container image
+name: 'CI Tool'
+description: 'Executes the homelab CI helper tool Docker image'
 
 inputs:
   command:
-    description: "Subcommand to run. One of: generate, list-rendered"
+    description: 'Command and arguments to pass to the CI tool'
     required: false
-    default: "generate"
-  repo-url:
-    description: Git repository URL written into generated Applications. Required for generate.
-    required: true
-  target-revision:
-    description: Git revision written into generated Applications
+    default: ''
+  image:
+    description: 'Docker image tag (defaults to ghcr.io/<owner>/ci:latest)'
     required: false
-    default: master
-  clusters-dir:
-    description: Path to the clusters directory, relative to the workspace
-    required: false
-    default: clusters
-  argo-namespace:
-    description: Argo CD namespace written into generated Applications
-    required: false
-    default: argocd
-  argo-project:
-    description: Argo CD project written into generated Applications
-    required: false
-    default: default
+    default: ''
 
 outputs:
   stdout:
-    description: Standard output from the command. list-rendered writes TSV (cluster, name, path).
+    description: 'Captured standard output from the CI tool command execution'
+    value: ${{ steps.run-ci.outputs.stdout }}
 
 runs:
-  using: docker
-  image: docker://ghcr.io/gregarendse/ci:latest
-  # /ci is a cobra binary. Values have to be flags; bare positionals are ignored.
-  # Equals form keeps an empty repo-url from swallowing the next flag.
-  args:
-    - argocd
-    - ${{ inputs.command }}
-    - --repo-url=${{ inputs['repo-url'] }}
-    - --target-revision=${{ inputs['target-revision'] }}
-    - --clusters-dir=${{ inputs['clusters-dir'] }}
-    - --argo-namespace=${{ inputs['argo-namespace'] }}
-    - --argo-project=${{ inputs['argo-project'] }}
+  using: 'composite'
+  steps:
+    - name: Run CI Tool Container
+      id: run-ci
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        IMAGE="${{ inputs.image }}"
+        if [ -z "$IMAGE" ]; then
+          OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE="ghcr.io/${OWNER_LOWER}/ci:latest"
+        fi
+
+        if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+          if [ -n "${GITHUB_TOKEN:-}" ]; then
+            echo "${GITHUB_TOKEN}" | docker login ghcr.io -u "${GITHUB_ACTOR:-github-actions}" --password-stdin >/dev/null 2>&1 || true
+          fi
+          echo "Pulling Docker image $IMAGE..."
+          if ! docker pull "$IMAGE" >/dev/null 2>&1; then
+            echo "Image $IMAGE not found in GHCR, building locally..."
+            docker build -t "$IMAGE" "${{ github.workspace }}/src/go/ci"
+          fi
+        fi
+
+        TMP_OUT=$(mktemp)
+        # Execute container in working directory mounting GITHUB_WORKSPACE
+        docker run --rm -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" -w "$GITHUB_WORKSPACE" "$IMAGE" ${{ inputs.command }} | tee "$TMP_OUT"
+
+        {
+          echo 'stdout<<EOF'
+          cat "$TMP_OUT"
+          echo 'EOF'
+        } >> "$GITHUB_OUTPUT"
+        rm -f "$TMP_OUT"

@@ -36,38 +36,8 @@ kubectl create secret generic pihole-secret \
 ### DNS Settings
 Modify the custom DNS settings in the ConfigMap to add your local domain mappings.
 
-### Ingress and authentication
-Pi-hole runs on **oci**, using Traefik. The user confirmed on 2026-09-27 that
-`pihole-ingress` routes `pihole.arendse.nom.za/` directly to `pihole-web:80`,
-Pi-hole is `1/1`, and the browser reaches Pi-hole's native login.
-
-```text
-browser -> Traefik -> pihole-web -> Pi-hole native login
-```
-
-**Zitadel integration skipped at the user's request.** Pi-hole has no native
-OIDC/SAML integration; its [authentication](https://docs.pi-hole.net/api/auth/)
-uses a local password, optional TOTP and sessions. An oauth2-proxy would only add
-an edge login gate, not replace Pi-hole's login. Keep `pihole-secret` and native
-authentication enabled. Do not run the previously proposed OAuth Secret-creation
-command or publish the proxy/ingress changes.
-
-**Cleanup prepared locally, not yet deployed:** the unused proxy entry and its
-rendered Application have been removed from `clusters/oci/`; the real Pi-hole
-entry and rendered workload are unchanged. The last live proxy Application
-result was `ComparisonError`; no proxy Deployment, Service or OAuth Secret
-existed at preflight. The user then verified that `oci-root` auto-sync is disabled
-and the root-tracked proxy Application has no finalizers or reported managed
-resources. After an approved commit/push, the user must remove only that abandoned
-Application on **oci**; publication alone will not auto-prune it. Do not enable
-root auto-sync or broadly sync/prune the root. Live removal is still pending.
-
-The untracked proxy values and unpublished `pihole.nix` ingress switch are
-preserved local work, not the desired deployment. Keep them out of the cleanup
-commit/push. Retain the already-created Terraform project/client until an
-explicit cleanup plan is reviewed. See
-[`CP-5.1`](../zitadel/MIGRATION.md#cp-51--pi-hole-sso-skipped) for the decision and
-cleanup boundaries. Pi-hole DNS, storage and live routing remain unchanged.
+### Ingress
+Update the hostname in the ingress configuration to match your domain.
 
 ## Usage
 

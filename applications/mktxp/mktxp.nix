@@ -84,10 +84,8 @@
               containers = [
                 {
                   name = "mktxp";
-                  # Security: Pin specific release tag and set IfNotPresent pull policy
-                  # to prevent supply-chain risks from unpinned mutable floating tags.
-                  image = "ghcr.io/akpw/mktxp:stable-20240317134614";
-                  imagePullPolicy = "IfNotPresent";
+                  image = "ghcr.io/akpw/mktxp:latest";
+                  imagePullPolicy = "Always";
                   # The image has no ENTRYPOINT (only CMD), so `command` must be
                   # set explicitly — otherwise args[0] ("--cfg-dir") is execed as
                   # the binary and the container fails with StartError.

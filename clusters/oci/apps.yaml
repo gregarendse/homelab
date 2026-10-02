@@ -91,6 +91,18 @@ apps:
     type: rendered
     path: applications/pihole
 
+  - name: pihole-zitadel-oauth2-proxy
+    type: helm
+    namespace: pihole
+    helm:
+      kind: remote
+      repoURL: https://oauth2-proxy.github.io/manifests
+      chart: oauth2-proxy
+      targetRevision: 10.7.0
+      releaseName: pihole-zitadel-oauth2-proxy
+      valueFiles:
+        - applications/pihole-zitadel-oauth2-proxy/values.yaml
+
   - name: mongo
     type: rendered
     path: applications/mongo

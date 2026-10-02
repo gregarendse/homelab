@@ -1,6 +1,28 @@
 # This file is maintained automatically by "terraform init".
 # Manual edits may be lost in future updates.
 
+provider "registry.terraform.io/auth0/auth0" {
+  version     = "1.51.0"
+  constraints = ">= 1.7.0"
+  hashes = [
+    "h1:D0acGMAF3xoxhEoTljVUIuWeRKG3YQ6CquR/2I0w3g0=",
+    "zh:030ea1296515ec0da2441aa95b5b3b8724f9399317135b8cdac100662657ff32",
+    "zh:2d8ac8e9b1a5560748905b0c21c7302e8493cd77bba4963301ecacfbf6bafc32",
+    "zh:30d04aa89a082b2068a364427ba5bd8618cf659065217da153cf69114f89f44b",
+    "zh:3e7fb29f89e8ea99443d3405634d7535466c8792403db7ff46f8f32b814af83c",
+    "zh:5638f7d06ac79972cf351b00d3a12791b20298678a3a88c7559de3ca75ea3d08",
+    "zh:702e8d1cd69d936f7603f45c89d3147785a294fca72d09f5e84145a724d64f68",
+    "zh:89544e259b12fdc78c12872472c0e228fdffeb2e97bbe1f7e69bfd9cb4eefa66",
+    "zh:9a271f1f7741a6e7ccec7bbe36f57fb2d2a0c8943075c0eabbaf085c26d242c5",
+    "zh:9d5409809a3d2a9e966e3f7ba5e0184a94195ff69871090867c17928e441193a",
+    "zh:a419a80c17cd7ae802cad3a5cbc6eed2c69153a2ce56211a9c245a29df5e9727",
+    "zh:b92ffc7c121779afca2a58607db782272812c5794683bfcffc0166b9782825de",
+    "zh:e63f866c984ce54ee51b9949c4d228b209066c36d8814fd64a44b3f49704dad3",
+    "zh:e69334e43a916b2736abcf38298d510dc989646bd578c2942269d67f92060553",
+    "zh:e701ae9d493fa716f81228a98dbe2bbe660dfcf8e5f4cc4f4ca1d2b4a2efae19",
+  ]
+}
+
 provider "registry.terraform.io/zitadel/zitadel" {
   version     = "3.3.0"
   constraints = ">= 3.0.0"

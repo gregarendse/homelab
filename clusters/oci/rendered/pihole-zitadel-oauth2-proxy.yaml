@@ -1,0 +1,35 @@
+# GENERATED FILE - DO NOT EDIT
+# Source: clusters/oci/apps.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: oci-pihole-zitadel-oauth2-proxy
+  namespace: argocd
+  labels:
+    homelab.gregarendse/cluster: "oci"
+    homelab.gregarendse/app: "pihole-zitadel-oauth2-proxy"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: pihole
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+  # Multi-source: chart from the upstream Helm repo, values from this Git repo
+  # (referenced via the $values ref).
+  sources:
+    - repoURL: https://oauth2-proxy.github.io/manifests
+      targetRevision: 10.7.0
+      chart: oauth2-proxy
+      helm:
+        releaseName: pihole-zitadel-oauth2-proxy
+        valueFiles:
+          - $values/applications/pihole-zitadel-oauth2-proxy/values.yaml
+    - repoURL: https://github.com/gregarendse/homelab.git
+      targetRevision: master
+      ref: values
