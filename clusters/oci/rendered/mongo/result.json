@@ -10,7 +10,7 @@
           "kubenix/project-name": "kubenix"
         },
         "labels": {
-          "kubenix/hash": "40a9b4bbcb914deaf3109c6651ca455202ba4ffd"
+          "kubenix/hash": "4751209136f1f1268765da57f18567b2c042371d"
         },
         "name": "mongo"
       }
@@ -25,7 +25,7 @@
         },
         "labels": {
           "app": "mongo",
-          "kubenix/hash": "40a9b4bbcb914deaf3109c6651ca455202ba4ffd"
+          "kubenix/hash": "4751209136f1f1268765da57f18567b2c042371d"
         },
         "name": "mongo",
         "namespace": "mongo"
@@ -94,6 +94,14 @@
                     "protocol": "TCP"
                   }
                 ],
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
                 "volumeMounts": [
                   {
                     "mountPath": "/data/db",
@@ -159,7 +167,7 @@
           "kubenix/project-name": "kubenix"
         },
         "labels": {
-          "kubenix/hash": "40a9b4bbcb914deaf3109c6651ca455202ba4ffd"
+          "kubenix/hash": "4751209136f1f1268765da57f18567b2c042371d"
         },
         "name": "unifi",
         "namespace": "mongo"
@@ -175,7 +183,7 @@
         },
         "labels": {
           "app": "mongo",
-          "kubenix/hash": "40a9b4bbcb914deaf3109c6651ca455202ba4ffd"
+          "kubenix/hash": "4751209136f1f1268765da57f18567b2c042371d"
         },
         "name": "mongo",
         "namespace": "mongo"
@@ -198,7 +206,7 @@
   ],
   "kind": "List",
   "labels": {
-    "kubenix/hash": "40a9b4bbcb914deaf3109c6651ca455202ba4ffd",
+    "kubenix/hash": "4751209136f1f1268765da57f18567b2c042371d",
     "kubenix/k8s-version": "1.28",
     "kubenix/project-name": "kubenix"
   }
