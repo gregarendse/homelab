@@ -105,7 +105,15 @@
                     "readOnly": true,
                     "subPath": "init-unifi.sh"
                   }
-                ]
+                ],
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                }
               }
             ],
             "volumes": [
