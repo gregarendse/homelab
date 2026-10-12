@@ -92,8 +92,10 @@
               containers = [
                 {
                   name = "hermes";
-                  image = "nousresearch/hermes-agent:latest";
-                  imagePullPolicy = "Always";
+                  # Security: Pin specific release tag and set IfNotPresent pull policy
+                  # to prevent supply-chain risks from unpinned mutable floating tags.
+                  image = "nousresearch/hermes-agent:rc.13-v0.21.7";
+                  imagePullPolicy = "IfNotPresent";
 
                   # Pass args (not command) so the official entrypoint.sh runs
                   # first: it bootstraps /opt/data and gosu-drops to the hermes

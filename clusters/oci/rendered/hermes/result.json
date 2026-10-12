@@ -83,8 +83,8 @@
                     }
                   }
                 ],
-                "image": "nousresearch/hermes-agent:latest",
-                "imagePullPolicy": "Always",
+                "image": "nousresearch/hermes-agent:rc.13-v0.21.7",
+                "imagePullPolicy": "IfNotPresent",
                 "livenessProbe": {
                   "failureThreshold": 3,
                   "periodSeconds": 30,

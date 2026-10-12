@@ -112,7 +112,7 @@
                     }
                   }
                 ],
-                "image": "lscr.io/linuxserver/unifi-network-application:latest",
+                "image": "lscr.io/linuxserver/unifi-network-application:10.6.106",
                 "imagePullPolicy": "IfNotPresent",
                 "name": "unifi-controller",
                 "ports": [

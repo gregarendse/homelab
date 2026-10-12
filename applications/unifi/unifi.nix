@@ -58,7 +58,9 @@
               containers = [
                 {
                   name = "unifi-controller";
-                  image = "lscr.io/linuxserver/unifi-network-application:latest";
+                  # Security: Pin specific release tag and set IfNotPresent pull policy
+                  # to prevent supply-chain risks from unpinned mutable floating tags.
+                  image = "lscr.io/linuxserver/unifi-network-application:10.6.106";
                   imagePullPolicy = "IfNotPresent";
                   env = [
                     {
