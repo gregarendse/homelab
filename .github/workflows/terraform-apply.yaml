@@ -1,0 +1,103 @@
+# Runs only on push to main. Secrets live in two GitHub Environments:
+#   oci-plan  : branch-restricted to main, no reviewers
+#   oci-apply : branch-restricted to main, required reviewers
+name: terraform-apply
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "infrastructure/**"
+      - "policy/**"
+
+permissions:
+  contents: read
+
+# One run at a time; never cancel a run that may hold the state lock.
+concurrency:
+  group: terraform-oci
+  cancel-in-progress: false
+
+env:
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: oci-plan
+    defaults:
+      run:
+        working-directory: infrastructure
+    steps:
+      - uses: actions/checkout@<SHA> # v4
+        with:
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@<SHA> # v3
+        with:
+          terraform_version: "1.9.8"
+          terraform_wrapper: false
+      - uses: actions/setup-go@<SHA> # v5
+        with:
+          go-version: "stable"
+      # go install verifies modules against the Go checksum DB
+      - run: go install github.com/open-policy-agent/conftest@v0.56.0
+
+      - name: Plan + Always Free guard
+        env:
+          TF_VAR_tenancy_ocid: ${{ secrets.OCI_TENANCY_OCID }}
+          TF_VAR_user_ocid: ${{ secrets.OCI_USER_OCID }}
+          TF_VAR_fingerprint: ${{ secrets.OCI_FINGERPRINT }}
+          TF_VAR_private_key: ${{ secrets.OCI_PRIVATE_KEY }}
+          TF_VAR_region: ${{ secrets.OCI_REGION }}
+          # Only if your backend is the S3-compatible OCI Object Storage one:
+          AWS_ACCESS_KEY_ID: ${{ secrets.TF_STATE_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.TF_STATE_SECRET_KEY }}
+        run: |
+          terraform init
+          terraform plan -out=tfplan -lock-timeout=60s
+          # plan.json holds unmasked values: never print or upload it
+          terraform show -json tfplan > plan.json
+          "$(go env GOPATH)/bin/conftest" test plan.json -p ../policy --no-color
+          rm -f plan.json
+
+  apply:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: oci-apply # required reviewers gate this job
+    defaults:
+      run:
+        working-directory: infrastructure
+    steps:
+      - uses: actions/checkout@<SHA> # v4
+        with:
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@<SHA> # v3
+        with:
+          terraform_version: "1.9.8"
+          terraform_wrapper: false
+      - uses: actions/setup-go@<SHA> # v5
+        with:
+          go-version: "stable"
+      - run: go install github.com/open-policy-agent/conftest@v0.56.0
+
+      # Re-plan here instead of passing tfplan between jobs: artifacts on a
+      # public repo are downloadable by anyone and a plan file can hold secrets.
+      - name: Re-plan, guard, apply
+        env:
+          TF_VAR_tenancy_ocid: ${{ secrets.OCI_TENANCY_OCID }}
+          TF_VAR_user_ocid: ${{ secrets.OCI_USER_OCID }}
+          TF_VAR_fingerprint: ${{ secrets.OCI_FINGERPRINT }}
+          TF_VAR_private_key: ${{ secrets.OCI_PRIVATE_KEY }}
+          TF_VAR_region: ${{ secrets.OCI_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.TF_STATE_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.TF_STATE_SECRET_KEY }}
+        run: |
+          terraform init
+          terraform plan -out=tfplan -lock-timeout=60s
+          terraform show -json tfplan > plan.json
+          "$(go env GOPATH)/bin/conftest" test plan.json -p ../policy --no-color
+          rm -f plan.json
+          terraform apply -lock-timeout=60s tfplan

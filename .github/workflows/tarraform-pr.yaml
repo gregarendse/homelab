@@ -1,0 +1,35 @@
+# Runs on every PR, including forks. NO secrets, read-only token.
+name: terraform-pr
+
+on:
+  pull_request:
+    paths:
+      - "infrastructure/**"
+      - "policy/**"
+      - ".github/workflows/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tf-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: infrastructure
+    steps:
+      - uses: actions/checkout@<SHA> # v4
+        with:
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@<SHA> # v3
+        with:
+          terraform_version: "1.9.8"
+          terraform_wrapper: false
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate

@@ -45,7 +45,7 @@ export TF_VAR_tailscale_api_key="${TS_API_KEY}"
 export TF_VAR_tailscale_tailnet="${TS_TAILNET}"
 export TF_VAR_public_key_path="${HOME}/.ssh/id_ed25519.pub"
 
-cat <<EOF > "~/.oci/config"
+cat <<EOF > "${HOME}/.oci/config"
 [DEFAULT]
 user=${OCI_USER_OCID}
 fingerprint=${OCI_FINGERPRINT}

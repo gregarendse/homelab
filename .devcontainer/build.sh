@@ -43,12 +43,13 @@ echo "deb [signed-by=${KEYRINGS}/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io
 chmod 644 /etc/apt/sources.list.d/kubernetes.list
 
 echo "Setting up helm"
-curl -fsSL https://baltocdn.com/helm/signing.asc | gpg --dearmor -o "${KEYRINGS}/helm.gpg" >/dev/null
-# allow unprivileged APT programs to read this keyring
-chmod 644 "${KEYRINGS}/helm.gpg"
-echo "deb [arch=$(dpkg --print-architecture) signed-by=${KEYRINGS}/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" >/etc/apt/sources.list.d/helm.list
-# helps tools such as command-not-found to work correctly
-chmod 644 /etc/apt/sources.list.d/helm.list
+HELM_VERSION="v3.18.6"
+HELM_ARCHIVE="helm-${HELM_VERSION}-linux-amd64.tar.gz"
+curl -fsSLO "https://get.helm.sh/${HELM_ARCHIVE}"
+curl -fsSL "https://get.helm.sh/${HELM_ARCHIVE}.sha256sum" | sha256sum --check
+tar -xzf "${HELM_ARCHIVE}" linux-amd64/helm
+install linux-amd64/helm /usr/local/bin/helm
+rm -rf linux-amd64 "${HELM_ARCHIVE}"
 
 echo "Setting up terraform"
 curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o "${KEYRINGS}/hashicorp-archive-keyring.gpg" >/dev/null
@@ -72,7 +73,6 @@ apt update
 apt install --yes \
     eza \
     kubectl \
-    helm \
     terraform=1.10.5-1
 # Pinning terraform version until this is resolved: https://github.com/hashicorp/terraform/issues/36704
 
