@@ -10,7 +10,7 @@
           "kubenix/project-name": "kubenix"
         },
         "labels": {
-          "kubenix/hash": "c356c9c29a908a4d62d41709af78ae1fc2a38f19"
+          "kubenix/hash": "a339b0dd882e6389e633b9e4edcf4bee6ab931ca"
         },
         "name": "unifi"
       }
@@ -25,7 +25,7 @@
         },
         "labels": {
           "app": "unifi-controller",
-          "kubenix/hash": "c356c9c29a908a4d62d41709af78ae1fc2a38f19"
+          "kubenix/hash": "a339b0dd882e6389e633b9e4edcf4bee6ab931ca"
         },
         "name": "unifi-controller",
         "namespace": "unifi"
@@ -112,7 +112,7 @@
                     }
                   }
                 ],
-                "image": "lscr.io/linuxserver/unifi-network-application:latest",
+                "image": "lscr.io/linuxserver/unifi-network-application:10.6.106",
                 "imagePullPolicy": "IfNotPresent",
                 "name": "unifi-controller",
                 "ports": [
@@ -201,7 +201,7 @@
           "kubenix/project-name": "kubenix"
         },
         "labels": {
-          "kubenix/hash": "c356c9c29a908a4d62d41709af78ae1fc2a38f19",
+          "kubenix/hash": "a339b0dd882e6389e633b9e4edcf4bee6ab931ca",
           "recurring-job-group.longhorn.io/wednesday-backup": "enabled",
           "recurring-job.longhorn.io/source": "enabled"
         },
@@ -229,7 +229,7 @@
         },
         "labels": {
           "app": "unifi-controller",
-          "kubenix/hash": "c356c9c29a908a4d62d41709af78ae1fc2a38f19"
+          "kubenix/hash": "a339b0dd882e6389e633b9e4edcf4bee6ab931ca"
         },
         "name": "unifi",
         "namespace": "unifi"
@@ -290,7 +290,7 @@
         },
         "labels": {
           "app": "unifi-controller",
-          "kubenix/hash": "c356c9c29a908a4d62d41709af78ae1fc2a38f19"
+          "kubenix/hash": "a339b0dd882e6389e633b9e4edcf4bee6ab931ca"
         },
         "name": "unifi-controller",
         "namespace": "unifi"
@@ -324,7 +324,7 @@
           "traefik.ingress.kubernetes.io/router.tls": "true"
         },
         "labels": {
-          "kubenix/hash": "c356c9c29a908a4d62d41709af78ae1fc2a38f19"
+          "kubenix/hash": "a339b0dd882e6389e633b9e4edcf4bee6ab931ca"
         },
         "name": "unifi-controller",
         "namespace": "unifi"
@@ -366,7 +366,7 @@
       "kind": "ServersTransport",
       "metadata": {
         "labels": {
-          "kubenix/hash": "c356c9c29a908a4d62d41709af78ae1fc2a38f19"
+          "kubenix/hash": "a339b0dd882e6389e633b9e4edcf4bee6ab931ca"
         },
         "name": "unifi",
         "namespace": "unifi"
@@ -378,7 +378,7 @@
   ],
   "kind": "List",
   "labels": {
-    "kubenix/hash": "c356c9c29a908a4d62d41709af78ae1fc2a38f19",
+    "kubenix/hash": "a339b0dd882e6389e633b9e4edcf4bee6ab931ca",
     "kubenix/k8s-version": "1.28",
     "kubenix/project-name": "kubenix"
   }
