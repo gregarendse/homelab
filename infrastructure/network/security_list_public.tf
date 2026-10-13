@@ -80,5 +80,22 @@ resource "oci_core_security_list" "public" {
     protocol    = "all"
   }
 
+  # WireGuard site-to-site tunnel: OCI <-> Trinity (on-prem), direct link.
+  # Kept as a static rule (not folded into local.ports) because its NLB
+  # backend is pinned to a single instance rather than the whole pool —
+  # see network/wireguard-trinity.tf for why.
+  ingress_security_rules {
+    description = "WireGuard: direct OCI<->Trinity tunnel"
+    stateless   = false
+    source      = var.trinity_public_ip_cidr
+    source_type = "CIDR_BLOCK"
+    protocol    = local.protocol_numbers.UDP
+
+    udp_options {
+      min = 51820
+      max = 51820
+    }
+  }
+
   freeform_tags = merge(var.tags, {})
 }

@@ -122,3 +122,28 @@ variable "loki_storage_bucket_name" {
   type        = string
   default     = "homelab-loki-logs"
 }
+
+#   Populated by environment variable TF_VAR_trinity_public_ip_cidr
+variable "trinity_public_ip_cidr" {
+  description = <<-EOT
+    Source CIDR allowed to reach the WireGuard listener (UDP 51820) on the
+    public NLB for the direct OCI<->Trinity tunnel. Use Trinity's WAN /32 if
+    it's static; otherwise leave as 0.0.0.0/0 and rely on WireGuard's own
+    handshake authentication (no unauthenticated traffic gets forwarded past
+    the tunnel either way).
+  EOT
+  type        = string
+  default     = "0.0.0.0/0"
+}
+
+variable "wireguard_gateway_instance_name" {
+  description = <<-EOT
+    display_name of the single OCI compute-pool instance (see `oci_core_instances.instances`
+    in infrastructure/network/data.tf) designated as the WireGuard gateway for
+    the direct Trinity link. This instance's node must also carry the
+    `homelab.arendse.nom.za/wireguard-gateway=true` Kubernetes label (applied
+    manually — see docs/wireguard-trinity.md). Must match the same value used
+    for wireguard_gateway_instance_name in infrastructure/kubernetes/variables.tf.
+  EOT
+  type        = string
+}
