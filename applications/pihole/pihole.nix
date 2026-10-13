@@ -73,6 +73,14 @@
                 {
                   name = "pihole";
                   image = "pihole/pihole:2026.07.2";
+                  # Security rationale: Least-privilege capability drop while granting required capabilities for DNS/DHCP operation
+                  securityContext = {
+                    allowPrivilegeEscalation = false;
+                    capabilities = {
+                      drop = [ "ALL" ];
+                      add = [ "NET_ADMIN" "NET_BIND_SERVICE" "NET_RAW" "SYS_TIME" ];
+                    };
+                  };
                   ports = [
                     {
                       name = "dns-tcp";
