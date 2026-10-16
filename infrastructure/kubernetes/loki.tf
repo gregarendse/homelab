@@ -6,14 +6,20 @@
 # thing Terraform owns in-cluster is the Secret that the Loki Helm release
 # consumes (loki-s3-secret).
 #
-# Cross-stack values are read from the storage stack's LOCAL state file. Both
-# stacks are run from this repo on the same machine, so the relative path
-# resolves. Run the storage stack first so these outputs exist.
+# Cross-stack values are read from the storage stack's S3 state in Backblaze B2.
+# Run the storage stack first so these outputs exist.
 data "terraform_remote_state" "storage" {
-  backend = "local"
+  backend = "s3"
 
   config = {
-    path = "${path.module}/../storage/terraform.tfstate"
+    bucket                      = "gregarendse-terraform"
+    key                         = "storage/state.json"
+    endpoints                   = { s3 = "https://s3.eu-central-003.backblazeb2.com" }
+    region                      = "eu-central-003"
+    skip_credentials_validation = true
+    skip_region_validation      = true
+    skip_requesting_account_id  = true
+    skip_s3_checksum            = true
   }
 }
 

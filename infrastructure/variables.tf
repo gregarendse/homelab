@@ -89,6 +89,7 @@ variable "instance_count" {
 variable "tailscale_api_key" {
   description = "Tailscale auth key"
   type        = string
+  sensitive   = true
 
   validation {
     condition     = length(var.tailscale_api_key) > 0

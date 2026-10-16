@@ -31,7 +31,7 @@ resource "oci_core_instance_configuration" "ubuntu" {
 
       metadata = {
         ssh_authorized_keys = file(var.public_key_path)
-        user_data           = data.cloudinit_config.cloudinit.rendered
+        user_data           = sensitive(data.cloudinit_config.cloudinit.rendered)
       }
     }
   }

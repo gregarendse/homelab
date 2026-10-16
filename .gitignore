@@ -50,6 +50,8 @@ result.json
 !.terraform.lock.hcl
 *.tfstate
 *.tfstate.backup
+# Local-only bootstrap / archived Terraform (not yet wired into CI or upstream)
+/infrastructure/bootstrap/
 # Terraform secrets — never commit backend creds, var files, or keys
 *.tfbackend
 *.tfvars
