@@ -3,6 +3,12 @@ name: gitops-render-and-generate
 on:
   pull_request:
     branches: [master]
+    paths:
+      - "applications/**"
+      - "clusters/**"
+      - "src/go/ci/**"
+      - ".github/actions/ci-tool/**"
+      - ".github/workflows/gitops-render-and-generate.yaml"
 
 concurrency:
   group: gitops-render-${{ github.head_ref }}
