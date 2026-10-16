@@ -1,12 +1,12 @@
 # Single-node OCI cluster configuration for Longhorn
 defaultSettings:
-  defaultReplicaCount: 1
+  defaultReplicaCount: "1"
   # Reboot resilience (single-node cluster): automatically clear faulted lone
   # replicas and re-attach volumes after an unclean reboot.
-  autoSalvage: true
-  autoDeletePodWhenVolumeDetachedUnexpectedly: true
+  autoSalvage: "true"
+  autoDeletePodWhenVolumeDetachedUnexpectedly: "true"
   # Set minimum available storage percentage reserve to 10% (default is 25%).
-  storageMinimalAvailablePercentage: 10
+  storageMinimalAvailablePercentage: "10"
 
 persistence:
   # Make the default `longhorn` StorageClass provision 1 replica so volumes
@@ -24,13 +24,14 @@ persistence:
 defaultBackupStore:
   backupTarget: ""
   backupTargetCredentialSecret: longhorn-backup-b2
-  pollInterval: 0
+  pollInterval: "0"
 
 # Staggered weekday backups (02:00 UTC) to stay under Backblaze B2's free-tier
 # Class B/C daily transaction caps. Keep empty while backups are disabled.
 extraObjects: []
 # extraObjects:
-#   - apiVersion: longhorn.io/v1beta2
+#   - |
+#     apiVersion: longhorn.io/v1beta2
 #     kind: RecurringJob
 #     metadata:
 #       name: monday-backup
@@ -43,7 +44,8 @@ extraObjects: []
 #       groups: ["monday-backup"]
 #       retain: 1
 #       concurrency: 1
-#   - apiVersion: longhorn.io/v1beta2
+#   - |
+#     apiVersion: longhorn.io/v1beta2
 #     kind: RecurringJob
 #     metadata:
 #       name: tuesday-backup
@@ -56,7 +58,8 @@ extraObjects: []
 #       groups: ["tuesday-backup"]
 #       retain: 1
 #       concurrency: 1
-#   - apiVersion: longhorn.io/v1beta2
+#   - |
+#     apiVersion: longhorn.io/v1beta2
 #     kind: RecurringJob
 #     metadata:
 #       name: wednesday-backup
@@ -69,7 +72,8 @@ extraObjects: []
 #       groups: ["wednesday-backup"]
 #       retain: 1
 #       concurrency: 1
-#   - apiVersion: longhorn.io/v1beta2
+#   - |
+#     apiVersion: longhorn.io/v1beta2
 #     kind: RecurringJob
 #     metadata:
 #       name: thursday-backup
@@ -82,7 +86,8 @@ extraObjects: []
 #       groups: ["thursday-backup"]
 #       retain: 1
 #       concurrency: 1
-#   - apiVersion: longhorn.io/v1beta2
+#   - |
+#     apiVersion: longhorn.io/v1beta2
 #     kind: RecurringJob
 #     metadata:
 #       name: friday-backup
@@ -95,7 +100,8 @@ extraObjects: []
 #       groups: ["friday-backup"]
 #       retain: 1
 #       concurrency: 1
-#   - apiVersion: longhorn.io/v1beta2
+#   - |
+#     apiVersion: longhorn.io/v1beta2
 #     kind: RecurringJob
 #     metadata:
 #       name: saturday-backup
@@ -108,7 +114,8 @@ extraObjects: []
 #       groups: ["saturday-backup"]
 #       retain: 1
 #       concurrency: 1
-#   - apiVersion: longhorn.io/v1beta2
+#   - |
+#     apiVersion: longhorn.io/v1beta2
 #     kind: RecurringJob
 #     metadata:
 #       name: sunday-backup
