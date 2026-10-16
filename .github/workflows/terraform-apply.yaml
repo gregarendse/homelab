@@ -1,16 +1,16 @@
 # Terraform apply & Always Free policy guard across infrastructure/* stacks.
 #
-# Runs on merges to `master`, gated behind the `production` GitHub Environment
-# so an apply only proceeds after manual reviewer approval.
+# Runs on merges to `master`, gated behind the target GitHub Environment (`oci`
+# or `trinity`) so an apply only proceeds after manual reviewer approval.
 # Re-plans and re-runs the Always Free OPA guard before applying so no plan
 # artifact (which can hold plaintext secrets) ever needs to be uploaded.
 #
 # ---------------------------------------------------------------------------
-# Required configuration in the `production` GitHub Environment
-# (Settings -> Environments -> production):
+# Required configuration in the `oci` GitHub Environment
+# (Settings -> Environments -> oci; add `trinity` if on-prem stacks are added):
 #
 #   Required reviewers: add yourself so apply pauses for approval.
-#   Deployment branches: restrict to `master`.
+#   Deployment branches: All branches (so both PR plans and master applies work).
 #
 #   Secrets:
 #     AWS_ACCESS_KEY_ID       Backblaze B2 keyID (used by the S3 state backend)
@@ -80,7 +80,7 @@ jobs:
     needs: policy
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: production # protection rules (required reviewers) gate the apply
+    environment: ${{ matrix.environment }} # protection rules (required reviewers) gate the apply
     # One run per stack at a time; never cancel a run that may hold the state lock.
     concurrency:
       group: terraform-apply-${{ matrix.dir }}
@@ -88,12 +88,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        dir:
-          - infrastructure/compute
-          - infrastructure/network
-          - infrastructure/storage
-          - infrastructure/identity
-          - infrastructure/cloudflare
+        include:
+          - dir: infrastructure/compute
+            environment: oci
+          - dir: infrastructure/network
+            environment: oci
+          - dir: infrastructure/storage
+            environment: oci
+          - dir: infrastructure/identity
+            environment: oci
+          - dir: infrastructure/cloudflare
+            environment: oci
     defaults:
       run:
         working-directory: ${{ matrix.dir }}
@@ -125,8 +130,8 @@ jobs:
       - name: Write credential files
         run: |
           umask 077
-          printf '%s' "${{ secrets.OCI_PRIVATE_KEY }}" > "${{ github.workspace }}/oci_api_key.pem"
-          printf '%s' "${{ vars.SSH_PUBLIC_KEY }}" > "${{ github.workspace }}/id_ssh.pub"
+          printf '%s\n' "${{ secrets.OCI_PRIVATE_KEY }}" > "${{ github.workspace }}/oci_api_key.pem"
+          printf '%s\n' "${{ vars.SSH_PUBLIC_KEY }}" > "${{ github.workspace }}/id_ssh.pub"
 
       - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4
         with:

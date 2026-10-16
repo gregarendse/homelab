@@ -5,10 +5,11 @@
 # Does NOT post the plan output to PR comments on this public repo.
 #
 # ---------------------------------------------------------------------------
-# Required configuration in the `production` GitHub Environment
-# (Settings -> Environments -> production):
+# Required configuration in the `oci` GitHub Environment
+# (Settings -> Environments -> oci; add `trinity` if on-prem stacks are added):
 #
 #   Required reviewers: add yourself so PR plans pause for approval.
+#   Deployment branches: All branches (so PR branches can request approval).
 #
 #   Secrets:
 #     AWS_ACCESS_KEY_ID       Backblaze B2 keyID (used by the S3 state backend)
@@ -83,16 +84,21 @@ jobs:
     needs: policy
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment: production
+    environment: ${{ matrix.environment }}
     strategy:
       fail-fast: false
       matrix:
-        dir:
-          - infrastructure/compute
-          - infrastructure/network
-          - infrastructure/storage
-          - infrastructure/identity
-          - infrastructure/cloudflare
+        include:
+          - dir: infrastructure/compute
+            environment: oci
+          - dir: infrastructure/network
+            environment: oci
+          - dir: infrastructure/storage
+            environment: oci
+          - dir: infrastructure/identity
+            environment: oci
+          - dir: infrastructure/cloudflare
+            environment: oci
     defaults:
       run:
         working-directory: ${{ matrix.dir }}
@@ -124,8 +130,8 @@ jobs:
       - name: Write credential files
         run: |
           umask 077
-          printf '%s' "${{ secrets.OCI_PRIVATE_KEY }}" > "${{ github.workspace }}/oci_api_key.pem"
-          printf '%s' "${{ vars.SSH_PUBLIC_KEY }}" > "${{ github.workspace }}/id_ssh.pub"
+          printf '%s\n' "${{ secrets.OCI_PRIVATE_KEY }}" > "${{ github.workspace }}/oci_api_key.pem"
+          printf '%s\n' "${{ vars.SSH_PUBLIC_KEY }}" > "${{ github.workspace }}/id_ssh.pub"
 
       - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4
         with:
