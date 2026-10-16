@@ -34,22 +34,6 @@ updates:
           - "*"
 
   - package-ecosystem: "terraform"
-    directory: "/infrastructure/cloudflare"
-    schedule:
-      interval: "weekly"
-      timezone: "Etc/UTC"
-    target-branch: "master"
-    open-pull-requests-limit: 10
-    labels: ["dependencies", "terraform", "cloudflare"]
-    commit-message:
-      prefix: "deps"
-      include: "scope"
-    groups:
-      dependencies:
-        patterns:
-          - "*"
-
-  - package-ecosystem: "terraform"
     directory: "/infrastructure/compute"
     schedule:
       interval: "weekly"

@@ -87,8 +87,9 @@ nix build .#manifests      # outputs to ./result or ./result.json
 
 ## Infrastructure (Terraform / OCI)
 
-- Provider config in `infrastructure/providers.tf`, resources split across focused files (`compute.tf`, `network/vcn.tf`, etc.)
-- Cloudflare DNS managed separately under `infrastructure/cloudflare/`
+- Shared provider and variable definitions live in `infrastructure/providers.tf` and `infrastructure/variables.tf` (symlinked into individual stacks).
+- Active stacks live under `infrastructure/<stack>/` (`compute`, `network`, `storage`, `identity`, and `kubernetes` for one-time cluster bootstrap).
+- Public Cloudflare DNS (`arendse.nom.za`) is managed in-cluster by `external-dns` (`applications/external-dns/`).
 
 ## Go CI Tool
 
@@ -111,4 +112,3 @@ all Kubernetes manifests with `kubeconform` so errors are caught before deploy:
 Both validate against `KUBE_VERSION` (default `1.28.0`) and skip CRDs not in the
 [CRDs-catalog](https://github.com/datreeio/CRDs-catalog). Run them locally before
 opening a PR; see `scripts/README-validation.md` for details.
-

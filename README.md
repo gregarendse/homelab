@@ -18,8 +18,8 @@ In practice, this means:
 
 | Layer | Tool | Scope | What Belongs Here |
 |---|---|---|---|
-| **Cloud & Edge Infrastructure** | **Terraform** (`infrastructure/<stack>/`) | OCI tenancy, networking, VMs, buckets, Cloudflare DNS, Zitadel OIDC, cluster bootstrap | VCNs, subnets, NLBs, OCI Always Free compute pool, Object Storage buckets, Cloudflare DNS records, Zitadel apps, and one-time Argo CD / secret bootstrap |
-| **Kubernetes Workloads** | **Argo CD** (`clusters/<cluster>/apps.yaml`) | All in-cluster controllers and applications on `trinity` and `oci` | Ingress (Traefik / ingress-nginx), cert-manager, external-dns, Longhorn, VPA, monitoring/Loki, and all user applications (`server/` Helm chart & `kubenix` flakes) |
+| **Cloud & Edge Infrastructure** | **Terraform** (`infrastructure/<stack>/`) | OCI tenancy, networking, VMs, buckets, Zitadel OIDC, cluster bootstrap | VCNs, subnets, NLBs, OCI Always Free compute pool, Object Storage buckets, Zitadel apps, and one-time Argo CD / secret bootstrap |
+| **Kubernetes Workloads & DNS** | **Argo CD** (`clusters/<cluster>/apps.yaml`) | All in-cluster controllers and applications on `trinity` and `oci` | Ingress (Traefik / ingress-nginx), cert-manager, external-dns (Cloudflare DNS sync), Longhorn, VPA, monitoring/Loki, and all user applications (`server/` Helm chart & `kubenix` flakes) |
 
 ```mermaid
 graph TD
@@ -33,7 +33,6 @@ graph TD
         NET["network/ (key: network/state.json)"]
         COMP["compute/ (key: compute/state.json)"]
         STOR["storage/ (key: storage/state.json)"]
-        CF["cloudflare/ (key: cloudflare/state.json)"]
         ID["identity/ (key: identity/state.json)"]
         K8S["kubernetes/ (key: kubernetes/state.json — bootstrap & secrets only)"]
     end
@@ -46,7 +45,6 @@ graph TD
     Root -. symlink .-> NET
     Root -. symlink .-> COMP
     Root -. symlink .-> STOR
-    Root -. symlink (.config.s3.tfbackend) .-> CF
     Root -. symlink (.config.s3.tfbackend) .-> ID
     K8S -->|bootstraps| OCI
 ```
@@ -60,8 +58,8 @@ graph TD
   - Per-cluster app inventories define Helm and rendered applications.
   - Argo CD bootstrap patterns and root app definitions are included in-cluster folders and Terraform.
 - **Infrastructure**
-  - OCI-focused Terraform for networking, compute, Kubernetes bootstrap, and supporting services.
-  - Cloudflare DNS/Tunnel Terraform in `infrastructure/cloudflare/`.
+  - OCI-focused Terraform for networking, compute, storage, Zitadel identity, and Kubernetes bootstrap.
+  - Public DNS records under `arendse.nom.za` are published automatically to Cloudflare via in-cluster `external-dns` (`applications/external-dns/`).
 - **Operations**
   - Utility scripts under `scripts/` for maintenance and backups.
   - Legacy Kubernetes-era Docker manifests kept for reference in `docker-scripts/`.
@@ -155,8 +153,16 @@ To make this durable in Git, set `defaultBackupStore.backupTarget: ""` and comme
 - It is not a guarantee that every legacy manifest is still actively deployed.
 - It does not store secrets in Git; sensitive values are expected to be injected via variables/secrets tooling.
 
+## Follow-up / Roadmap
+
+- **Deploy `external-dns` on `trinity`:**
+  - Add an `external-dns` entry to `clusters/trinity/apps.yaml` with a cluster-specific values override (`applications/external-dns/trinity.values.yaml`) that sets a **distinct `txtOwnerId`** (e.g. `txtOwnerId: external-dns-trinity-arendse.nom.za`, while `oci` uses `external-dns-arendse.nom.za`). Because `policy: sync` is enabled, each cluster must have its own `txtOwnerId` so they do not delete each other's Cloudflare DNS records.
+  - Create the `cloudflare-credentials` Secret in the `external-dns` namespace on `trinity` (`see applications/external-dns/EXTERNAL_DNS.md`).
+- **Remove hardcoded public IP from `applications/traefik/values.yaml`:**
+  - Investigate whether `--providers.kubernetesingress.ingressendpoint.ip` can be replaced with an `external-dns` default target or `ingressendpoint.hostname` so the OCI public IP doesn't need to be committed in values.
+
 ## Suggested reading
 
 - `docs/gitops.md` for the cluster GitOps flow and Argo CD bootstrap pattern.
-- `infrastructure/cloudflare/README.md` for Cloudflare-specific Terraform usage.
+- `applications/external-dns/EXTERNAL_DNS.md` for Cloudflare External DNS setup and troubleshooting.
 - `src/go/ci/README.md` for CI tooling used in this repository.
