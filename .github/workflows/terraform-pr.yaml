@@ -5,8 +5,8 @@
 # Does NOT post the plan output to PR comments on this public repo.
 #
 # ---------------------------------------------------------------------------
-# Required configuration in the `oci` GitHub Environment
-# (Settings -> Environments -> oci; add `trinity` if on-prem stacks are added):
+# Required configuration in the `production` GitHub Environment
+# (Settings -> Environments -> production):
 #
 #   Required reviewers: add yourself so PR plans pause for approval.
 #   Deployment branches: All branches (so PR branches can request approval).
@@ -84,21 +84,16 @@ jobs:
     needs: policy
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment: ${{ matrix.environment }}
+    environment: production
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - dir: infrastructure/compute
-            environment: oci
-          - dir: infrastructure/network
-            environment: oci
-          - dir: infrastructure/storage
-            environment: oci
-          - dir: infrastructure/identity
-            environment: oci
-          - dir: infrastructure/cloudflare
-            environment: oci
+        dir:
+          - infrastructure/compute
+          - infrastructure/network
+          - infrastructure/storage
+          - infrastructure/identity
+          - infrastructure/cloudflare
     defaults:
       run:
         working-directory: ${{ matrix.dir }}
