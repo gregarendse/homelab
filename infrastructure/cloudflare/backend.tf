@@ -2,10 +2,8 @@
 # https://thegeeklab.de/posts/2022/09/store-terraform-state-on-backblaze-s3/
 terraform {
   backend "s3" {
-    key = "cloudflare/state.json"
-
-    endpoint = "https://s3.eu-central-003.backblazeb2.com"
-    region   = "eu-central-003"
+    bucket = "gregarendse-terraform"
+    key    = "cloudflare/state.json"
 
     # Using Backblaze B2 - these validations do not apply
     skip_credentials_validation = true

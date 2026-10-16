@@ -5,10 +5,10 @@ data "terraform_remote_state" "network" {
     key = "network/state.json"
 
     endpoints = {
-            s3 = "https://s3.eu-central-003.backblazeb2.com"
+      s3 = "https://s3.eu-central-003.backblazeb2.com"
     }
 
-    region   = "eu-central-003"
+    region = "eu-central-003"
 
     bucket     = var.s3_backend_bucket
     access_key = var.s3_backend_access_key
