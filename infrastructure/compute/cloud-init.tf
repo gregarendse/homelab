@@ -1,10 +1,12 @@
 
 resource "tailscale_tailnet_key" "oracle" {
-  reusable      = true
-  ephemeral     = false
-  preauthorized = true
-  expiry        = 3600
-  description   = "Oracle Cloud Instance Key"
+  reusable            = true
+  ephemeral           = false
+  preauthorized       = true
+  expiry              = 3600
+  description         = "Oracle Cloud Instance Key"
+  tags                = ["tag:oci"]
+  recreate_if_invalid = "always"
 }
 
 

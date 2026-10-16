@@ -17,19 +17,20 @@
 #     AWS_SECRET_ACCESS_KEY   Backblaze B2 applicationKey
 #     OCI_TENANCY_OCID        ocid1.tenancy.oc1...
 #     OCI_USER_OCID           ocid1.user.oc1...
-#     OCI_FINGERPRINT         API key fingerprint (xx:xx:..:xx)
-#     OCI_PRIVATE_KEY         Full PEM contents of the OCI API private key
-#     TAILSCALE_API_KEY       Tailscale auth key
-#     CLOUDFLARE_API_TOKEN    Cloudflare API token (infrastructure/cloudflare)
-#     ZITADEL_ACCESS_TOKEN    Zitadel PAT (infrastructure/identity)
+#     OCI_FINGERPRINT               API key fingerprint (xx:xx:..:xx)
+#     OCI_PRIVATE_KEY               Full PEM contents of the OCI API private key
+#     TAILSCALE_OAUTH_CLIENT_SECRET Tailscale OAuth client secret
+#     CLOUDFLARE_API_TOKEN          Cloudflare API token (infrastructure/cloudflare)
+#     ZITADEL_ACCESS_TOKEN          Zitadel PAT (infrastructure/identity)
 #
 #   Variables:
-#     OCI_REGION              e.g. uk-london-1 (optional; defaults below)
-#     TAILSCALE_TAILNET       Tailscale tailnet name
-#     SSH_PUBLIC_KEY          Public SSH key written to instances
-#     DOMAIN_NAME             e.g. arendse.nom.za (optional; defaults below)
-#     ZITADEL_DOMAIN          Zitadel domain (infrastructure/identity)
-#     ZITADEL_ORG_ID          Zitadel numeric org ID (infrastructure/identity)
+#     OCI_REGION                    e.g. uk-london-1 (optional; defaults below)
+#     TAILSCALE_TAILNET             Tailscale tailnet name
+#     TAILSCALE_OAUTH_CLIENT_ID     Tailscale OAuth client ID
+#     SSH_PUBLIC_KEY                Public SSH key written to instances
+#     DOMAIN_NAME                   e.g. arendse.nom.za (optional; defaults below)
+#     ZITADEL_DOMAIN                Zitadel domain (infrastructure/identity)
+#     ZITADEL_ORG_ID                Zitadel numeric org ID (infrastructure/identity)
 # ---------------------------------------------------------------------------
 
 name: terraform-apply
@@ -106,7 +107,8 @@ jobs:
       TF_VAR_tenancy_ocid: ${{ secrets.OCI_TENANCY_OCID }}
       TF_VAR_user_ocid: ${{ secrets.OCI_USER_OCID }}
       TF_VAR_fingerprint: ${{ secrets.OCI_FINGERPRINT }}
-      TF_VAR_tailscale_api_key: ${{ secrets.TAILSCALE_API_KEY }}
+      TF_VAR_tailscale_oauth_client_id: ${{ vars.TAILSCALE_OAUTH_CLIENT_ID }}
+      TF_VAR_tailscale_oauth_client_secret: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
       TF_VAR_region: ${{ vars.OCI_REGION || 'uk-london-1' }}
       TF_VAR_tailscale_tailnet: ${{ vars.TAILSCALE_TAILNET }}
       TF_VAR_private_key_path: ${{ github.workspace }}/oci_api_key.pem

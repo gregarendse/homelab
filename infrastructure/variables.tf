@@ -85,27 +85,26 @@ variable "instance_count" {
   default = 1
 }
 
-#   Populated by environment variable TF_VAR_tailscale_api_key
-variable "tailscale_api_key" {
-  description = "Tailscale auth key"
+#   Populated by environment variable TF_VAR_tailscale_oauth_client_id
+variable "tailscale_oauth_client_id" {
+  description = "Tailscale OAuth client ID"
+  type        = string
+  default     = ""
+}
+
+#   Populated by environment variable TF_VAR_tailscale_oauth_client_secret
+variable "tailscale_oauth_client_secret" {
+  description = "Tailscale OAuth client secret"
   type        = string
   sensitive   = true
-
-  validation {
-    condition     = length(var.tailscale_api_key) > 0
-    error_message = "Tailscale API key must not be empty"
-  }
+  default     = ""
 }
 
 #   Populated by environment variable TF_VAR_tailscale_tailnet
 variable "tailscale_tailnet" {
   description = "Tailscale tailnet name"
   type        = string
-
-  validation {
-    condition     = length(var.tailscale_tailnet) > 0
-    error_message = "Tailscale tailnet must not be empty"
-  }
+  default     = ""
 }
 
 variable "public_key_path" {
