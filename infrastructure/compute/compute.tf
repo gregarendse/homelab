@@ -38,7 +38,10 @@ resource "oci_core_instance_configuration" "ubuntu" {
 
   lifecycle {
     create_before_destroy = true
-    ignore_changes        = [instance_details[0].launch_details[0].metadata]
+    ignore_changes = [
+      instance_details[0].launch_details[0].metadata,
+      instance_details[0].launch_details[0].source_details[0].image_id,
+    ]
   }
 }
 
@@ -62,5 +65,3 @@ resource "oci_core_instance_pool" "ubuntu" {
     }
   }
 }
-
-

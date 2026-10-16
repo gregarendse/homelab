@@ -133,40 +133,6 @@ locals {
   ])
 }
 
-import {
-  to = oci_network_load_balancer_backend.backend["ubuntu-5-http"]
-  id = "networkLoadBalancers/ocid1.networkloadbalancer.oc1.uk-london-1.amaaaaaai5e2auiaqs4iexdw6aoiuaqnujizytdsgsp3pwuoxs44tieh5fbq/backendSets/http/backends/ocid1.instance.oc1.uk-london-1.anwgiljti5e2auicl5oal4opxomf5laamsmre5j7q73djslah3zaf7h4gaza.30080"
-}
-
-import {
-  to = oci_network_load_balancer_backend.backend["ubuntu-5-https"]
-  id = "networkLoadBalancers/ocid1.networkloadbalancer.oc1.uk-london-1.amaaaaaai5e2auiaqs4iexdw6aoiuaqnujizytdsgsp3pwuoxs44tieh5fbq/backendSets/https/backends/ocid1.instance.oc1.uk-london-1.anwgiljti5e2auicl5oal4opxomf5laamsmre5j7q73djslah3zaf7h4gaza.30443"
-}
-import {
-  to = oci_network_load_balancer_backend.backend["ubuntu-5-kube-apiserver"]
-  id = "networkLoadBalancers/ocid1.networkloadbalancer.oc1.uk-london-1.amaaaaaai5e2auiaqs4iexdw6aoiuaqnujizytdsgsp3pwuoxs44tieh5fbq/backendSets/kube-apiserver/backends/ocid1.instance.oc1.uk-london-1.anwgiljti5e2auicl5oal4opxomf5laamsmre5j7q73djslah3zaf7h4gaza.6443"
-}
-import {
-  to = oci_network_load_balancer_backend.backend["ubuntu-5-unifi-portal"]
-  id = "networkLoadBalancers/ocid1.networkloadbalancer.oc1.uk-london-1.amaaaaaai5e2auiaqs4iexdw6aoiuaqnujizytdsgsp3pwuoxs44tieh5fbq/backendSets/unifi-portal/backends/ocid1.instance.oc1.uk-london-1.anwgiljti5e2auicl5oal4opxomf5laamsmre5j7q73djslah3zaf7h4gaza.30808"
-}
-import {
-  to = oci_network_load_balancer_backend.backend["ubuntu-6-http"]
-  id = "networkLoadBalancers/ocid1.networkloadbalancer.oc1.uk-london-1.amaaaaaai5e2auiaqs4iexdw6aoiuaqnujizytdsgsp3pwuoxs44tieh5fbq/backendSets/http/backends/ocid1.instance.oc1.uk-london-1.anwgiljsi5e2auicgg42szcckmowmt5d2wiiqzbzjxhqzczu3y5bte5k4slq.30080"
-}
-import {
-  to = oci_network_load_balancer_backend.backend["ubuntu-6-https"]
-  id = "networkLoadBalancers/ocid1.networkloadbalancer.oc1.uk-london-1.amaaaaaai5e2auiaqs4iexdw6aoiuaqnujizytdsgsp3pwuoxs44tieh5fbq/backendSets/https/backends/ocid1.instance.oc1.uk-london-1.anwgiljsi5e2auicgg42szcckmowmt5d2wiiqzbzjxhqzczu3y5bte5k4slq.30443"
-}
-import {
-  to = oci_network_load_balancer_backend.backend["ubuntu-6-kube-apiserver"]
-  id = "networkLoadBalancers/ocid1.networkloadbalancer.oc1.uk-london-1.amaaaaaai5e2auiaqs4iexdw6aoiuaqnujizytdsgsp3pwuoxs44tieh5fbq/backendSets/kube-apiserver/backends/ocid1.instance.oc1.uk-london-1.anwgiljsi5e2auicgg42szcckmowmt5d2wiiqzbzjxhqzczu3y5bte5k4slq.6443"
-}
-import {
-  to = oci_network_load_balancer_backend.backend["ubuntu-6-unifi-portal"]
-  id = "networkLoadBalancers/ocid1.networkloadbalancer.oc1.uk-london-1.amaaaaaai5e2auiaqs4iexdw6aoiuaqnujizytdsgsp3pwuoxs44tieh5fbq/backendSets/unifi-portal/backends/ocid1.instance.oc1.uk-london-1.anwgiljsi5e2auicgg42szcckmowmt5d2wiiqzbzjxhqzczu3y5bte5k4slq.30808"
-}
-
 resource "oci_network_load_balancer_backend" "backend" {
   for_each = { for i in local.instances : "${i.instance.display_name}-${i.port.name}" => i }
 
