@@ -1,0 +1,123 @@
+# Single-node OCI cluster configuration for Longhorn
+defaultSettings:
+  defaultReplicaCount: 1
+  # Reboot resilience (single-node cluster): automatically clear faulted lone
+  # replicas and re-attach volumes after an unclean reboot.
+  autoSalvage: true
+  autoDeletePodWhenVolumeDetachedUnexpectedly: true
+  # Set minimum available storage percentage reserve to 10% (default is 25%).
+  storageMinimalAvailablePercentage: 10
+
+persistence:
+  # Make the default `longhorn` StorageClass provision 1 replica so volumes
+  # don't sit permanently degraded on a single-node cluster.
+  defaultClassReplicaCount: 1
+
+# Backblaze B2 backup store configuration.
+# NOTE: backupTarget is currently empty ("") to keep backups disabled until
+# oversized Prometheus + Loki backup sets are cleared from B2 (10 GB free-tier cap).
+# To re-enable:
+#   1. Delete the oversized Prometheus + Loki backup sets from B2 so stored
+#      data drops back under 10 GB.
+#   2. Set backupTarget to "s3://<bucket-name>@<region>/"
+#   3. Uncomment the extraObjects RecurringJobs below.
+defaultBackupStore:
+  backupTarget: ""
+  backupTargetCredentialSecret: longhorn-backup-b2
+  pollInterval: 0
+
+# Staggered weekday backups (02:00 UTC) to stay under Backblaze B2's free-tier
+# Class B/C daily transaction caps. Keep empty while backups are disabled.
+extraObjects: []
+# extraObjects:
+#   - apiVersion: longhorn.io/v1beta2
+#     kind: RecurringJob
+#     metadata:
+#       name: monday-backup
+#       namespace: longhorn-system
+#       annotations:
+#         argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+#     spec:
+#       cron: "0 2 * * 1"
+#       task: backup
+#       groups: ["monday-backup"]
+#       retain: 1
+#       concurrency: 1
+#   - apiVersion: longhorn.io/v1beta2
+#     kind: RecurringJob
+#     metadata:
+#       name: tuesday-backup
+#       namespace: longhorn-system
+#       annotations:
+#         argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+#     spec:
+#       cron: "0 2 * * 2"
+#       task: backup
+#       groups: ["tuesday-backup"]
+#       retain: 1
+#       concurrency: 1
+#   - apiVersion: longhorn.io/v1beta2
+#     kind: RecurringJob
+#     metadata:
+#       name: wednesday-backup
+#       namespace: longhorn-system
+#       annotations:
+#         argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+#     spec:
+#       cron: "0 2 * * 3"
+#       task: backup
+#       groups: ["wednesday-backup"]
+#       retain: 1
+#       concurrency: 1
+#   - apiVersion: longhorn.io/v1beta2
+#     kind: RecurringJob
+#     metadata:
+#       name: thursday-backup
+#       namespace: longhorn-system
+#       annotations:
+#         argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+#     spec:
+#       cron: "0 2 * * 4"
+#       task: backup
+#       groups: ["thursday-backup"]
+#       retain: 1
+#       concurrency: 1
+#   - apiVersion: longhorn.io/v1beta2
+#     kind: RecurringJob
+#     metadata:
+#       name: friday-backup
+#       namespace: longhorn-system
+#       annotations:
+#         argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+#     spec:
+#       cron: "0 2 * * 5"
+#       task: backup
+#       groups: ["friday-backup"]
+#       retain: 1
+#       concurrency: 1
+#   - apiVersion: longhorn.io/v1beta2
+#     kind: RecurringJob
+#     metadata:
+#       name: saturday-backup
+#       namespace: longhorn-system
+#       annotations:
+#         argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+#     spec:
+#       cron: "0 2 * * 6"
+#       task: backup
+#       groups: ["saturday-backup"]
+#       retain: 1
+#       concurrency: 1
+#   - apiVersion: longhorn.io/v1beta2
+#     kind: RecurringJob
+#     metadata:
+#       name: sunday-backup
+#       namespace: longhorn-system
+#       annotations:
+#         argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+#     spec:
+#       cron: "0 2 * * 0"
+#       task: backup
+#       groups: ["sunday-backup"]
+#       retain: 1
+#       concurrency: 1

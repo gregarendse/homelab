@@ -20,9 +20,16 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true
-  source:
-    repoURL: https://charts.jetstack.io
-    targetRevision: v1.18.2
-    chart: cert-manager
-    helm:
-      releaseName: cert-manager
+  # Multi-source: chart from the upstream Helm repo, values from this Git repo
+  # (referenced via the $values ref).
+  sources:
+    - repoURL: https://charts.jetstack.io
+      targetRevision: v1.18.2
+      chart: cert-manager
+      helm:
+        releaseName: cert-manager
+        valueFiles:
+          - $values/applications/cert-manager/values.yaml
+    - repoURL: https://github.com/gregarendse/homelab.git
+      targetRevision: master
+      ref: values
