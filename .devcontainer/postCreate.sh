@@ -40,12 +40,12 @@ export TF_VAR_tenancy_ocid="${OCI_TENANCY_OCID}"
 export TF_VAR_user_ocid="${OCI_USER_OCID}"
 export TF_VAR_fingerprint="${OCI_FINGERPRINT}"
 export TF_VAR_region="${OCI_REGION}"
-export TF_VAR_cloudflare_api_token="${CLOUDFLARE_API_TOKEN}"
-export TF_VAR_tailscale_api_key="${TS_API_KEY}"
+export TF_VAR_tailscale_oauth_client_id="${TS_OAUTH_CLIENT_ID}"
+export TF_VAR_tailscale_oauth_client_secret="${TS_OAUTH_CLIENT_SECRET}"
 export TF_VAR_tailscale_tailnet="${TS_TAILNET}"
 export TF_VAR_public_key_path="${HOME}/.ssh/id_ed25519.pub"
 
-cat <<EOF > "~/.oci/config"
+cat <<EOF > "${HOME}/.oci/config"
 [DEFAULT]
 user=${OCI_USER_OCID}
 fingerprint=${OCI_FINGERPRINT}

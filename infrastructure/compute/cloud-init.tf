@@ -5,6 +5,11 @@ resource "tailscale_tailnet_key" "oracle" {
   preauthorized = true
   expiry        = 3600
   description   = "Oracle Cloud Instance Key"
+  tags          = ["tag:oci"]
+
+  lifecycle {
+    ignore_changes = [tags]
+  }
 }
 
 

@@ -1,22 +1,5 @@
 version: 2
 updates:
-  # Terraform modules/providers in infrastructure
-  - package-ecosystem: "terraform"
-    directory: "/infrastructure"
-    schedule:
-      interval: "weekly"
-      timezone: "Etc/UTC"
-    target-branch: "master"
-    open-pull-requests-limit: 10
-    labels: ["dependencies", "terraform"]
-    commit-message:
-      prefix: "deps"
-      include: "scope"
-    groups:
-      dependencies:
-        patterns:
-          - "*"
-
   # Terraform modules (each module directory must directly contain .tf files)
   - package-ecosystem: "terraform"
     directory: "/infrastructure/modules/kubernetes/manifest"
@@ -42,22 +25,6 @@ updates:
     target-branch: "master"
     open-pull-requests-limit: 10
     labels: ["dependencies", "terraform", "module:oci-nlb-listener"]
-    commit-message:
-      prefix: "deps"
-      include: "scope"
-    groups:
-      dependencies:
-        patterns:
-          - "*"
-
-  - package-ecosystem: "terraform"
-    directory: "/infrastructure/cloudflare"
-    schedule:
-      interval: "weekly"
-      timezone: "Etc/UTC"
-    target-branch: "master"
-    open-pull-requests-limit: 10
-    labels: ["dependencies", "terraform", "cloudflare"]
     commit-message:
       prefix: "deps"
       include: "scope"
@@ -106,6 +73,38 @@ updates:
     target-branch: "master"
     open-pull-requests-limit: 10
     labels: ["dependencies", "terraform", "network"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "terraform"
+    directory: "/infrastructure/storage"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "terraform", "storage"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "terraform"
+    directory: "/infrastructure/identity"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "terraform", "identity"]
     commit-message:
       prefix: "deps"
       include: "scope"

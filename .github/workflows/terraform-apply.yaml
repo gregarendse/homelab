@@ -1,0 +1,164 @@
+# Terraform apply & Always Free policy guard across infrastructure/* stacks.
+#
+# Runs on merges to `master`, gated behind the `production` GitHub Environment
+# so an apply only proceeds after manual reviewer approval.
+# Re-plans and re-runs the Always Free OPA guard before applying so no plan
+# artifact (which can hold plaintext secrets) ever needs to be uploaded.
+#
+# ---------------------------------------------------------------------------
+# Required configuration in the `production` GitHub Environment
+# (Settings -> Environments -> production):
+#
+#   Required reviewers: add yourself so apply pauses for approval.
+#   Deployment branches: All branches (so both PR plans and master applies work).
+#
+#   Secrets:
+#     AWS_ACCESS_KEY_ID       Backblaze B2 keyID (used by the S3 state backend)
+#     AWS_SECRET_ACCESS_KEY   Backblaze B2 applicationKey
+#     OCI_TENANCY_OCID        ocid1.tenancy.oc1...
+#     OCI_USER_OCID           ocid1.user.oc1...
+#     OCI_FINGERPRINT               API key fingerprint (xx:xx:..:xx)
+#     OCI_PRIVATE_KEY               Full PEM contents of the OCI API private key
+#     TAILSCALE_OAUTH_CLIENT_SECRET Tailscale OAuth client secret
+#     ZITADEL_ACCESS_TOKEN          Zitadel PAT (infrastructure/identity)
+#
+#   Variables:
+#     OCI_REGION                    e.g. uk-london-1 (optional; defaults below)
+#     TAILSCALE_TAILNET             Tailscale tailnet name
+#     TAILSCALE_OAUTH_CLIENT_ID     Tailscale OAuth client ID
+#     SSH_PUBLIC_KEY                Public SSH key written to instances
+#     DOMAIN_NAME                   e.g. arendse.nom.za (optional; defaults below)
+#     ZITADEL_DOMAIN                Zitadel domain (infrastructure/identity)
+#     ZITADEL_ORG_ID                Zitadel numeric org ID (infrastructure/identity)
+# ---------------------------------------------------------------------------
+
+name: terraform-apply
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "infrastructure/**"
+      - "policy/**"
+      - ".github/workflows/terraform-apply.yaml"
+
+permissions:
+  contents: read
+
+env:
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+  TF_VERSION: "1.14.9" # match the version recorded in remote state
+  # Non-secret backend settings (creds come from AWS_* env below).
+  BACKEND_BUCKET: "gregarendse-terraform"
+  BACKEND_ENDPOINT: "https://s3.eu-central-003.backblazeb2.com"
+  BACKEND_REGION: "eu-central-003"
+
+jobs:
+  policy:
+    name: verify policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: "stable"
+
+      - name: Install conftest
+        run: go install github.com/open-policy-agent/conftest@v0.56.0
+
+      - name: Run Rego unit tests
+        run: |
+          "$(go env GOPATH)/bin/conftest" verify -p policy --no-color
+
+  apply:
+    name: apply (${{ matrix.dir }})
+    needs: policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production # protection rules (required reviewers) gate the apply
+    # One run per stack at a time; never cancel a run that may hold the state lock.
+    concurrency:
+      group: terraform-apply-${{ matrix.dir }}
+      cancel-in-progress: false
+    strategy:
+      fail-fast: false
+      matrix:
+        dir:
+          - infrastructure/compute
+          - infrastructure/network
+          - infrastructure/storage
+          - infrastructure/identity
+    defaults:
+      run:
+        working-directory: ${{ matrix.dir }}
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      TF_VAR_tenancy_ocid: ${{ secrets.OCI_TENANCY_OCID }}
+      TF_VAR_user_ocid: ${{ secrets.OCI_USER_OCID }}
+      TF_VAR_fingerprint: ${{ secrets.OCI_FINGERPRINT }}
+      TF_VAR_tailscale_oauth_client_id: ${{ vars.TAILSCALE_OAUTH_CLIENT_ID }}
+      TF_VAR_tailscale_oauth_client_secret: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
+      TF_VAR_region: ${{ vars.OCI_REGION || 'uk-london-1' }}
+      TF_VAR_tailscale_tailnet: ${{ vars.TAILSCALE_TAILNET }}
+      TF_VAR_private_key_path: ${{ github.workspace }}/oci_api_key.pem
+      TF_VAR_public_key_path: ${{ github.workspace }}/id_ssh.pub
+      TF_VAR_base_domain: ${{ vars.DOMAIN_NAME || 'arendse.nom.za' }}
+      TF_VAR_zitadel_domain: ${{ vars.ZITADEL_DOMAIN }}
+      TF_VAR_zitadel_access_token: ${{ secrets.ZITADEL_ACCESS_TOKEN }}
+      TF_VAR_zitadel_org_id: ${{ vars.ZITADEL_ORG_ID }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Write credential files
+        run: |
+          umask 077
+          printf '%s\n' "${{ secrets.OCI_PRIVATE_KEY }}" > "${{ github.workspace }}/oci_api_key.pem"
+          printf '%s\n' "${{ vars.SSH_PUBLIC_KEY }}" > "${{ github.workspace }}/id_ssh.pub"
+
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version: "stable"
+
+      # go install verifies modules against the Go checksum DB
+      - name: Install conftest
+        run: go install github.com/open-policy-agent/conftest@v0.56.0
+
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive
+
+      - name: Terraform init
+        run: |
+          terraform init -input=false \
+            -backend-config="endpoint=${BACKEND_ENDPOINT}" \
+            -backend-config="region=${BACKEND_REGION}"
+
+      - name: Terraform validate
+        run: terraform validate -no-color
+
+      - name: Terraform plan, Always Free guard, and apply
+        run: |
+          set -euo pipefail
+          trap 'rm -f plan.json tfplan' EXIT
+          terraform plan -input=false -no-color -lock-timeout=120s -out=tfplan
+          # plan.json holds unmasked values: never print or upload it
+          terraform show -json tfplan > plan.json
+          "$(go env GOPATH)/bin/conftest" test plan.json -p "${{ github.workspace }}/policy" --no-color
+          rm -f plan.json
+          terraform apply -input=false -no-color -lock-timeout=120s tfplan
+
+      - name: Clean up credential files
+        if: always()
+        run: rm -f "${{ github.workspace }}/oci_api_key.pem" "${{ github.workspace }}/id_ssh.pub"

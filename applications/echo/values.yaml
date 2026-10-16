@@ -5,6 +5,7 @@ ingress:
   annotations:
     kubernetes.io/tls-acme: "true"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
   hosts:
     - host: echo.arendse.nom.za
       path: /
