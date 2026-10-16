@@ -1,0 +1,45 @@
+# https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns#values
+provider: cloudflare
+
+env:
+  - name: CF_API_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: cloudflare-credentials # Created out-of-band — see applications/external-dns/EXTERNAL_DNS.md
+        key: cloudflare-api-token
+
+registry: txt
+txtOwnerId: external-dns-arendse.nom.za
+txtPrefix: external-dns-
+domainFilters:
+  - arendse.nom.za
+
+# Per-record proxying is controlled via the ingress annotation:
+# external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+
+rbac:
+  create: true
+
+serviceAccount:
+  create: true
+  name: external-dns
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+logLevel: info
+sources:
+  - ingress
+policy: sync
+
+metrics:
+  enabled: true
+  service:
+    annotations: {}
+
+replicas: 1

@@ -1,0 +1,35 @@
+# GENERATED FILE - DO NOT EDIT
+# Source: clusters/oci/apps.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: oci-traefik
+  namespace: argocd
+  labels:
+    homelab.gregarendse/cluster: "oci"
+    homelab.gregarendse/app: "traefik"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: traefik
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+  # Multi-source: chart from the upstream Helm repo, values from this Git repo
+  # (referenced via the $values ref).
+  sources:
+    - repoURL: https://traefik.github.io/charts
+      targetRevision: 37.1.2
+      chart: traefik
+      helm:
+        releaseName: traefik
+        valueFiles:
+          - $values/applications/traefik/values.yaml
+    - repoURL: https://github.com/gregarendse/homelab.git
+      targetRevision: master
+      ref: values

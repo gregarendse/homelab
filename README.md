@@ -14,6 +14,43 @@ In practice, this means:
 - Kubernetes apps are managed through Argo CD inventories (`clusters/<cluster>/apps.yaml`).
 - App configuration lives in `applications/` and generated manifests are committed under `clusters/<cluster>/rendered/`.
 
+## Architecture & Responsibility Boundary (Terraform vs. GitOps)
+
+| Layer | Tool | Scope | What Belongs Here |
+|---|---|---|---|
+| **Cloud & Edge Infrastructure** | **Terraform** (`infrastructure/<stack>/`) | OCI tenancy, networking, VMs, buckets, Cloudflare DNS, Zitadel OIDC, cluster bootstrap | VCNs, subnets, NLBs, OCI Always Free compute pool, Object Storage buckets, Cloudflare DNS records, Zitadel apps, and one-time Argo CD / secret bootstrap |
+| **Kubernetes Workloads** | **Argo CD** (`clusters/<cluster>/apps.yaml`) | All in-cluster controllers and applications on `trinity` and `oci` | Ingress (Traefik / ingress-nginx), cert-manager, external-dns, Longhorn, VPA, monitoring/Loki, and all user applications (`server/` Helm chart & `kubenix` flakes) |
+
+```mermaid
+graph TD
+    subgraph Root ["infrastructure/ (Shared Config Only)"]
+        P[providers.tf]
+        V[variables.tf]
+        C[.config.s3.tfbackend]
+    end
+
+    subgraph Stacks ["Active Terraform Stacks (B2 S3 Backend)"]
+        NET["network/ (key: network/state.json)"]
+        COMP["compute/ (key: compute/state.json)"]
+        STOR["storage/ (key: storage/state.json)"]
+        CF["cloudflare/ (key: cloudflare/state.json)"]
+        ID["identity/ (key: identity/state.json)"]
+        K8S["kubernetes/ (key: kubernetes/state.json — bootstrap & secrets only)"]
+    end
+
+    subgraph GitOps ["GitOps (Argo CD)"]
+        OCI["clusters/oci/ (apps.yaml + rendered/)"]
+        TRIN["clusters/trinity/ (apps.yaml + rendered/)"]
+    end
+
+    Root -. symlink .-> NET
+    Root -. symlink .-> COMP
+    Root -. symlink .-> STOR
+    Root -. symlink (.config.s3.tfbackend) .-> CF
+    Root -. symlink (.config.s3.tfbackend) .-> ID
+    K8S -->|bootstraps| OCI
+```
+
 ## Current State (as represented in this repo)
 
 - **Clusters**
@@ -34,13 +71,14 @@ In practice, this means:
 Volumes are backed up to Backblaze B2 once a week each, staggered across the
 week so any single night only backs up 1-2 volumes. This keeps B2 Class B/C
 (LIST/HEAD) transactions under the free-tier daily cap. Seven RecurringJobs
-(`<day>-backup`) live in `infrastructure/kubernetes/longhorn.tf`, one per
-weekday at 02:00.
+(`<day>-backup`) live in `applications/longhorn/values.yaml` (`extraObjects`),
+one per weekday at 02:00.
 
-> **Backups are currently DISABLED.** `local.longhorn_backups_enabled` in
-> `infrastructure/kubernetes/longhorn.tf` is `false` (empties the backup target
-> and skips the RecurringJobs) following a 2026-07-27 storage-cap incident. See
-> the `TODO(backups)` there for the steps to re-enable.
+> **Backups are currently DISABLED.** `defaultBackupStore.backupTarget` in
+> `applications/longhorn/values.yaml` is `""` (empties the backup target and
+> comments out the `extraObjects` RecurringJobs) following a 2026-07-27
+> storage-cap incident. See the comments in `applications/longhorn/values.yaml`
+> for the steps to re-enable.
 
 Watch **two** separate B2 free-tier limits: the daily transaction caps
 (2,500 Class B and 2,500 Class C) and the **10 GB stored-data cap**. Staggering
@@ -109,8 +147,7 @@ kubectl -n longhorn-system delete recurringjobs.longhorn.io --all
 kubectl -n longhorn-system delete backups.longhorn.io --all
 ```
 
-To make this durable in Git, set `local.longhorn_backups_enabled = false` in
-`infrastructure/kubernetes/longhorn.tf` and apply.
+To make this durable in Git, set `defaultBackupStore.backupTarget: ""` and comment out the `extraObjects` RecurringJobs in `applications/longhorn/values.yaml`.
 
 ## What this repository is not
 

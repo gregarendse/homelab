@@ -1,0 +1,35 @@
+# GENERATED FILE - DO NOT EDIT
+# Source: clusters/oci/apps.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: oci-external-dns
+  namespace: argocd
+  labels:
+    homelab.gregarendse/cluster: "oci"
+    homelab.gregarendse/app: "external-dns"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: external-dns
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+  # Multi-source: chart from the upstream Helm repo, values from this Git repo
+  # (referenced via the $values ref).
+  sources:
+    - repoURL: https://kubernetes-sigs.github.io/external-dns
+      targetRevision: 1.15.1
+      chart: external-dns
+      helm:
+        releaseName: external-dns
+        valueFiles:
+          - $values/applications/external-dns/values.yaml
+    - repoURL: https://github.com/gregarendse/homelab.git
+      targetRevision: master
+      ref: values

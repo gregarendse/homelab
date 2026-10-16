@@ -23,7 +23,6 @@ apps:
   #      targetRevision: "9.4.15"
   #      releaseName: argocd
 
-  #  Managed by infrastructure/kubernetes/cert-manager.tf
   - name: cert-manager
     type: helm
     namespace: security
@@ -33,6 +32,8 @@ apps:
       chart: cert-manager
       targetRevision: v1.18.2
       releaseName: cert-manager
+      valueFiles:
+        - applications/cert-manager/values.yaml
 
   ## Ignore : ToDo: enroll
   #  - name: cilium
@@ -45,38 +46,51 @@ apps:
   #      targetRevision: "" # TODO
   #      releaseName: cilium
 
-  # Managed by infrastructure/kubernetes/longhorn.tf
-  #  - name: longhorn
-  #    type: helm
-  #    namespace: longhorn-system
-  #    helm:
-  #      kind: remote
-  #      repoURL: ""        # TODO
-  #      chart: ""          # TODO
-  #      targetRevision: "" # TODO
-  #      releaseName: longhorn
+  - name: external-dns
+    type: helm
+    namespace: external-dns
+    helm:
+      kind: remote
+      repoURL: https://kubernetes-sigs.github.io/external-dns
+      chart: external-dns
+      targetRevision: 1.15.1
+      releaseName: external-dns
+      valueFiles:
+        - applications/external-dns/values.yaml
 
-  # Managed by infrastructure/kubernetes/traefik.tf
-  #  - name: traefik
-  #    type: helm
-  #    namespace: traefik
-  #    helm:
-  #      kind: remote
-  #      repoURL: ""        # TODO
-  #      chart: ""          # TODO
-  #      targetRevision: "" # TODO
-  #      releaseName: traefik
+  - name: longhorn
+    type: helm
+    namespace: longhorn-system
+    helm:
+      kind: remote
+      repoURL: https://charts.longhorn.io
+      chart: longhorn
+      targetRevision: 1.10.0
+      releaseName: longhorn
+      valueFiles:
+        - applications/longhorn/values.yaml
 
-  # Managed by infrastructure/kubernetes/vertical-pod-autoscaler.tf
-  #  - name: vertical-pod-autoscaler
-  #    type: helm
-  #    namespace: kube-system
-  #    helm:
-  #      kind: remote
-  #      repoURL: ""        # TODO
-  #      chart: ""          # TODO
-  #      targetRevision: "" # TODO
-  #      releaseName: vertical-pod-autoscaler
+  - name: traefik
+    type: helm
+    namespace: traefik
+    helm:
+      kind: remote
+      repoURL: https://traefik.github.io/charts
+      chart: traefik
+      targetRevision: 37.1.2
+      releaseName: traefik
+      valueFiles:
+        - applications/traefik/values.yaml
+
+  - name: vertical-pod-autoscaler
+    type: helm
+    namespace: kube-system
+    helm:
+      kind: remote
+      repoURL: https://stevehipwell.github.io/helm-charts
+      chart: vertical-pod-autoscaler
+      targetRevision: 1.9.2
+      releaseName: vertical-pod-autoscaler
 
   # Rendered (kubenix/Nix) apps -> CI renders to dist/oci/<app> and Argo applies YAML from there
   - name: hermes

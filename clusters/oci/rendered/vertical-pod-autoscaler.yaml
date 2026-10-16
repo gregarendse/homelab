@@ -1,0 +1,28 @@
+# GENERATED FILE - DO NOT EDIT
+# Source: clusters/oci/apps.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: oci-vertical-pod-autoscaler
+  namespace: argocd
+  labels:
+    homelab.gregarendse/cluster: "oci"
+    homelab.gregarendse/app: "vertical-pod-autoscaler"
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+  source:
+    repoURL: https://stevehipwell.github.io/helm-charts
+    targetRevision: 1.9.2
+    chart: vertical-pod-autoscaler
+    helm:
+      releaseName: vertical-pod-autoscaler
