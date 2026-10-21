@@ -55,6 +55,11 @@
                 {
                   name = "mongo";
                   image = "mongo:8";
+                  # Security context to drop capabilities and restrict privilege escalation
+                  securityContext = {
+                    allowPrivilegeEscalation = false;
+                    capabilities.drop = [ "ALL" ];
+                  };
                   ports = [
                     {
                       name = "mongo";
