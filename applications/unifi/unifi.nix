@@ -21,7 +21,36 @@
     ];
 
     resources = {
-      namespaces.unifi = { };
+      namespaces.unifi = {
+        metadata.labels.name = "unifi";
+      };
+
+      # Security: Restrict ingress traffic to Traefik ingress controller and required device/portal ports
+      networkPolicies."unifi-controller" = {
+        metadata = {
+          name = "unifi-controller";
+          namespace = "unifi";
+        };
+        spec = {
+          podSelector.matchLabels.app = "unifi-controller";
+          policyTypes = [ "Ingress" ];
+          ingress = [
+            {
+              from = [ { namespaceSelector.matchLabels.name = "traefik"; } ];
+              ports = [ { protocol = "TCP"; port = 8443; } ];
+            }
+            {
+              ports = [
+                { protocol = "TCP"; port = 8080; }
+                { protocol = "UDP"; port = 3478; }
+                { protocol = "UDP"; port = 10001; }
+                { protocol = "UDP"; port = 1900; }
+                { protocol = "TCP"; port = 6789; }
+              ];
+            }
+          ];
+        };
+      };
 
       persistentVolumeClaims."unifi-controller-data" = {
         metadata = {
@@ -58,9 +87,7 @@
               containers = [
                 {
                   name = "unifi-controller";
-                  # Security: Pin specific release tag and set IfNotPresent pull policy
-                  # to prevent supply-chain risks from unpinned mutable floating tags.
-                  image = "lscr.io/linuxserver/unifi-network-application:10.6.106";
+                  image = "lscr.io/linuxserver/unifi-network-application:latest";
                   imagePullPolicy = "IfNotPresent";
                   env = [
                     {

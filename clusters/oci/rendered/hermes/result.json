@@ -10,7 +10,7 @@
           "kubenix/project-name": "kubenix"
         },
         "labels": {
-          "kubenix/hash": "bfa654e66fdaca214df63003ee9e397d4c0a4b5c"
+          "kubenix/hash": "79da803da8c02dfb4d935236bdacc64d1670372f"
         },
         "name": "hermes"
       }
@@ -25,7 +25,7 @@
         },
         "labels": {
           "app": "hermes",
-          "kubenix/hash": "bfa654e66fdaca214df63003ee9e397d4c0a4b5c"
+          "kubenix/hash": "79da803da8c02dfb4d935236bdacc64d1670372f"
         },
         "name": "hermes",
         "namespace": "hermes"
@@ -83,8 +83,8 @@
                     }
                   }
                 ],
-                "image": "nousresearch/hermes-agent:rc.13-v0.21.7",
-                "imagePullPolicy": "IfNotPresent",
+                "image": "nousresearch/hermes-agent:latest",
+                "imagePullPolicy": "Always",
                 "livenessProbe": {
                   "failureThreshold": 3,
                   "periodSeconds": 30,
@@ -199,7 +199,7 @@
         },
         "labels": {
           "app": "hermes",
-          "kubenix/hash": "bfa654e66fdaca214df63003ee9e397d4c0a4b5c"
+          "kubenix/hash": "79da803da8c02dfb4d935236bdacc64d1670372f"
         },
         "name": "hermes-config",
         "namespace": "hermes"
@@ -215,7 +215,7 @@
         },
         "labels": {
           "app": "hermes",
-          "kubenix/hash": "bfa654e66fdaca214df63003ee9e397d4c0a4b5c",
+          "kubenix/hash": "79da803da8c02dfb4d935236bdacc64d1670372f",
           "recurring-job-group.longhorn.io/friday-backup": "enabled",
           "recurring-job.longhorn.io/source": "enabled"
         },
@@ -244,7 +244,7 @@
         },
         "labels": {
           "app": "hermes",
-          "kubenix/hash": "bfa654e66fdaca214df63003ee9e397d4c0a4b5c"
+          "kubenix/hash": "79da803da8c02dfb4d935236bdacc64d1670372f"
         },
         "name": "hermes",
         "namespace": "hermes"
@@ -273,7 +273,7 @@
   ],
   "kind": "List",
   "labels": {
-    "kubenix/hash": "bfa654e66fdaca214df63003ee9e397d4c0a4b5c",
+    "kubenix/hash": "79da803da8c02dfb4d935236bdacc64d1670372f",
     "kubenix/k8s-version": "1.28",
     "kubenix/project-name": "kubenix"
   }
