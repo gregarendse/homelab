@@ -11,6 +11,28 @@ repos:
 
     -   id: check-added-large-files
 
+-   repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.109.3
+    hooks:
+    # Directory of each changed file, not -recursive. Rewrites in place.
+    # Do not pass -diff: stacks keep gitignored *.tfvars in the same directory.
+    -   id: terraform_fmt
+        files: ^infrastructure/.*\.(tf|tfvars)$
+        exclude: (^infrastructure/bootstrap/|\.terraform/)
+        args:
+        -   --args=-no-color
+    # Do not validate infrastructure/ itself. providers.tf and variables.tf are
+    # shared config symlinked into stacks, not a root module.
+    # init always passes -backend=false (also set here) so the Backblaze
+    # backend is never contacted. Retry cleanup needs jq.
+    -   id: terraform_validate
+        files: ^infrastructure/.+/.*\.(tf|tfvars)$|^infrastructure/.+/\.terraform\.lock\.hcl$
+        exclude: (^infrastructure/bootstrap/|\.terraform/)
+        args:
+        -   --args=-no-color
+        -   --tf-init-args=-backend=false
+        -   --hook-config=--retry-once-with-cleanup=true
+
 -   repo: local
     hooks:
     -   id: argocd-generate

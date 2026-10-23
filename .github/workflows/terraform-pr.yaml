@@ -93,6 +93,7 @@ jobs:
           - infrastructure/network
           - infrastructure/storage
           - infrastructure/identity
+          - infrastructure/vault
     defaults:
       run:
         working-directory: ${{ matrix.dir }}
