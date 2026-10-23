@@ -18,7 +18,7 @@ In practice, this means:
 
 | Layer | Tool | Scope | What Belongs Here |
 |---|---|---|---|
-| **Cloud & Edge Infrastructure** | **Terraform** (`infrastructure/<stack>/`) | OCI tenancy, networking, VMs, buckets, Zitadel OIDC, cluster bootstrap | VCNs, subnets, NLBs, OCI Always Free compute pool, Object Storage buckets, Zitadel apps, and one-time Argo CD / secret bootstrap |
+| **Cloud & Edge Infrastructure** | **Terraform** (`infrastructure/<stack>/`) | OCI tenancy, networking, VMs, buckets, Vault, Zitadel OIDC, cluster bootstrap | VCNs, subnets, NLBs, OCI Always Free compute pool, Object Storage buckets, the Always Free Vault, Zitadel apps, and one-time Argo CD / secret bootstrap |
 | **Kubernetes Workloads & DNS** | **Argo CD** (`clusters/<cluster>/apps.yaml`) | All in-cluster controllers and applications on `trinity` and `oci` | Ingress (Traefik / ingress-nginx), cert-manager, external-dns (Cloudflare DNS sync), Longhorn, VPA, monitoring/Loki, and all user applications (`server/` Helm chart & `kubenix` flakes) |
 
 ```mermaid
@@ -34,6 +34,7 @@ graph TD
         COMP["compute/ (key: compute/state.json)"]
         STOR["storage/ (key: storage/state.json)"]
         ID["identity/ (key: identity/state.json)"]
+        VAULT["vault/ (key: vault/state.json)"]
         K8S["kubernetes/ (key: kubernetes/state.json — bootstrap & secrets only)"]
     end
 
@@ -45,6 +46,7 @@ graph TD
     Root -. symlink .-> NET
     Root -. symlink .-> COMP
     Root -. symlink .-> STOR
+    Root -. symlink .-> VAULT
     Root -. symlink (.config.s3.tfbackend) .-> ID
     K8S -->|bootstraps| OCI
 ```

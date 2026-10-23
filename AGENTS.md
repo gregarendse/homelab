@@ -87,8 +87,9 @@ nix build .#manifests      # outputs to ./result or ./result.json
 
 ## Infrastructure (Terraform / OCI)
 
-- Shared provider and variable definitions live in `infrastructure/providers.tf` and `infrastructure/variables.tf` (symlinked into individual stacks).
-- Active stacks live under `infrastructure/<stack>/` (`compute`, `network`, `storage`, `identity`, and `kubernetes` for one-time cluster bootstrap).
+- Shared provider and variable definitions live in `infrastructure/providers.tf` and `infrastructure/variables.tf` (symlinked into individual stacks). That directory is not a root module.
+- Active stacks live under `infrastructure/<stack>/` (`compute`, `network`, `storage`, `identity`, `vault`, and `kubernetes` for one-time cluster bootstrap).
+- Pre-commit (`antonbabenko/pre-commit-terraform`) runs `terraform fmt` and `terraform validate` on changed `infrastructure/` files. Validate inits with `-backend=false` and skips the shared root. `jq` is required for the validate retry.
 - Public Cloudflare DNS (`arendse.nom.za`) is managed in-cluster by `external-dns` (`applications/external-dns/`).
 
 ## Go CI Tool

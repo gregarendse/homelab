@@ -9,6 +9,12 @@
 #   - 2 A1 OCPUs total
 #   - 12 GB A1 RAM total
 #   - 200 GB total block storage (boot + data volumes)
+#
+# Vault (https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm):
+#   - only DEFAULT vaults are Always Free
+#   - VIRTUAL_PRIVATE and EXTERNAL are paid and denied
+#   - vault_type must be known at plan time
+#   - oci_kms_key protection_mode must be SOFTWARE (the provider default is HSM)
 package main
 
 import rego.v1
@@ -37,6 +43,10 @@ live_pools := live_resources("oci_core_instance_pool")
 live_configs := live_resources("oci_core_instance_configuration")
 
 live_volumes := live_resources("oci_core_volume")
+
+live_vaults := live_resources("oci_kms_vault")
+
+live_keys := live_resources("oci_kms_key")
 
 # --- Standalone oci_core_instance helpers ---
 
@@ -175,4 +185,59 @@ deny contains msg if {
 deny contains msg if {
 	total_storage > max_storage_gb
 	msg := sprintf("Block storage (boot + data) %v GB exceeds Always Free limit of %v GB", [total_storage, max_storage_gb])
+}
+
+# --- Vault ---
+
+# OCI provider accepts the API enum case-insensitively. Compare lowered so
+# "default" is not a false deny and "virtual_private" is not a bypass.
+vault_type(rc) := object.get(rc.change.after, "vault_type", "")
+
+known_vault_type(rc) if {
+	is_string(vault_type(rc))
+	vault_type(rc) != ""
+}
+
+allowed_vault_type(rc) if {
+	known_vault_type(rc)
+	lower(vault_type(rc)) == "default"
+}
+
+deny contains msg if {
+	some rc in live_vaults
+	not known_vault_type(rc)
+	msg := sprintf("%s: vault_type must be set explicitly and known at plan time", [rc.address])
+}
+
+deny contains msg if {
+	some rc in live_vaults
+	known_vault_type(rc)
+	not allowed_vault_type(rc)
+	msg := sprintf("%s: vault_type %v is not Always Free", [rc.address, vault_type(rc)])
+}
+
+# Provider default is HSM. An omitted protection_mode is a deny, not an allow.
+protection_mode(rc) := object.get(rc.change.after, "protection_mode", "")
+
+known_protection_mode(rc) if {
+	is_string(protection_mode(rc))
+	protection_mode(rc) != ""
+}
+
+allowed_protection_mode(rc) if {
+	known_protection_mode(rc)
+	lower(protection_mode(rc)) == "software"
+}
+
+deny contains msg if {
+	some rc in live_keys
+	not known_protection_mode(rc)
+	msg := sprintf("%s: protection_mode must be SOFTWARE and known at plan time (provider default is HSM)", [rc.address])
+}
+
+deny contains msg if {
+	some rc in live_keys
+	known_protection_mode(rc)
+	not allowed_protection_mode(rc)
+	msg := sprintf("%s: protection_mode %v is not Always Free", [rc.address, protection_mode(rc)])
 }

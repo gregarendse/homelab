@@ -113,6 +113,22 @@ updates:
         patterns:
           - "*"
 
+  - package-ecosystem: "terraform"
+    directory: "/infrastructure/vault"
+    schedule:
+      interval: "weekly"
+      timezone: "Etc/UTC"
+    target-branch: "master"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "terraform", "vault"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    groups:
+      dependencies:
+        patterns:
+          - "*"
+
   # Docker images in application values.yaml files
   - package-ecosystem: "docker"
     directory: "/applications/actual"
