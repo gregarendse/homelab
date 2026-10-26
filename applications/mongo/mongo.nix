@@ -8,6 +8,23 @@
     resources = {
       namespaces.mongo = { };
 
+      # Security rationale: Enforce default-deny egress and restrict ingress to UniFi namespace and local pods
+      networkPolicies."mongo-policy" = {
+        metadata = { name = "mongo-policy"; namespace = "mongo"; };
+        spec = {
+          podSelector = { };
+          policyTypes = [ "Ingress" "Egress" ];
+          ingress = [ {
+            from = [
+              { namespaceSelector.matchLabels."kubernetes.io/metadata.name" = "unifi"; }
+              { podSelector = { }; }
+            ];
+            ports = [ { port = 27017; protocol = "TCP"; } ];
+          } ];
+          egress = [ ];
+        };
+      };
+
       configMaps."unifi" = {
         metadata = {
           name = "unifi";
