@@ -10,7 +10,7 @@
           "kubenix/project-name": "kubenix"
         },
         "labels": {
-          "kubenix/hash": "4751209136f1f1268765da57f18567b2c042371d"
+          "kubenix/hash": "474e77c090c1d501c9b6f72d4a7029f9f82e499f"
         },
         "name": "mongo"
       }
@@ -25,7 +25,7 @@
         },
         "labels": {
           "app": "mongo",
-          "kubenix/hash": "4751209136f1f1268765da57f18567b2c042371d"
+          "kubenix/hash": "474e77c090c1d501c9b6f72d4a7029f9f82e499f"
         },
         "name": "mongo",
         "namespace": "mongo"
@@ -167,7 +167,7 @@
           "kubenix/project-name": "kubenix"
         },
         "labels": {
-          "kubenix/hash": "4751209136f1f1268765da57f18567b2c042371d"
+          "kubenix/hash": "474e77c090c1d501c9b6f72d4a7029f9f82e499f"
         },
         "name": "unifi",
         "namespace": "mongo"
@@ -183,7 +183,7 @@
         },
         "labels": {
           "app": "mongo",
-          "kubenix/hash": "4751209136f1f1268765da57f18567b2c042371d"
+          "kubenix/hash": "474e77c090c1d501c9b6f72d4a7029f9f82e499f"
         },
         "name": "mongo",
         "namespace": "mongo"
@@ -207,28 +207,51 @@
       "apiVersion": "networking.k8s.io/v1",
       "kind": "NetworkPolicy",
       "metadata": {
-        "annotations": { "kubenix/k8s-version": "1.28", "kubenix/project-name": "kubenix" },
-        "labels": { "app": "mongo", "kubenix/hash": "4751209136f1f1268765da57f18567b2c042371d" },
+        "annotations": {
+          "kubenix/k8s-version": "1.28",
+          "kubenix/project-name": "kubenix"
+        },
+        "labels": {
+          "kubenix/hash": "474e77c090c1d501c9b6f72d4a7029f9f82e499f"
+        },
         "name": "mongo-policy",
         "namespace": "mongo"
       },
       "spec": {
+        "egress": [],
+        "ingress": [
+          {
+            "from": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "unifi"
+                  }
+                }
+              },
+              {
+                "podSelector": {}
+              }
+            ],
+            "ports": [
+              {
+                "port": 27017,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ],
         "podSelector": {},
-        "policyTypes": [ "Ingress", "Egress" ],
-        "ingress": [ {
-          "from": [
-            { "namespaceSelector": { "matchLabels": { "kubernetes.io/metadata.name": "unifi" } } },
-            { "podSelector": {} }
-          ],
-          "ports": [ { "port": 27017, "protocol": "TCP" } ]
-        } ],
-        "egress": []
+        "policyTypes": [
+          "Ingress",
+          "Egress"
+        ]
       }
     }
   ],
   "kind": "List",
   "labels": {
-    "kubenix/hash": "4751209136f1f1268765da57f18567b2c042371d",
+    "kubenix/hash": "474e77c090c1d501c9b6f72d4a7029f9f82e499f",
     "kubenix/k8s-version": "1.28",
     "kubenix/project-name": "kubenix"
   }
